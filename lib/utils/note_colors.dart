@@ -37,10 +37,15 @@ class NoteColors {
   /// Returns the color for rest notes.
   static const Color restColor = Color(0xFFBDBDBD); // Light grey
 
+  /// Luminance threshold above which black text is readable on the background.
+  /// Used by [textColorFor]; duplicating this elsewhere is discouraged.
+  static const double textLuminanceThreshold = 0.35;
+
   /// Returns a color suitable for text on top of the given background color.
   static Color textColorFor(Color background) {
-    final luminance = background.computeLuminance();
-    return luminance > 0.35 ? Colors.black87 : Colors.white;
+    return background.computeLuminance() > textLuminanceThreshold
+        ? Colors.black87
+        : Colors.white;
   }
 
   /// Returns a list of all note colors in chromatic order (for legend display).

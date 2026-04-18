@@ -5,6 +5,7 @@ import '../models/music_note.dart';
 import '../models/measure.dart';
 import '../providers/color_scheme_provider.dart';
 import '../utils/music_constants.dart';
+import '../utils/note_colors.dart';
 import 'note_widget.dart';
 
 /// Displays the full sheet music for a song with color-coded notes.
