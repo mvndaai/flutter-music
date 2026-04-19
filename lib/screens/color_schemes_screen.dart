@@ -369,7 +369,7 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
     final keyController = TextEditingController();
     final key = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Add octave override'),
         content: TextField(
           controller: keyController,
@@ -379,15 +379,16 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
             helperText: 'Note name followed by octave number',
             border: OutlineInputBorder(),
           ),
-          onSubmitted: (v) => Navigator.pop(_, v.trim()),
+          onSubmitted: (v) => Navigator.pop(dialogContext, v.trim()),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(_),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(_, keyController.text.trim()),
+            onPressed: () =>
+                Navigator.pop(dialogContext, keyController.text.trim()),
             child: const Text('Next'),
           ),
         ],

@@ -114,8 +114,8 @@ class InstrumentColorScheme {
   /// Xylophone with the traditional 8-bar diatonic palette:
   /// C=purple, D=blue, E=green, F=lime, G=yellow, A=orange, B=red, C(high)=pink.
   ///
-  /// The high C is modelled as octave overrides for C5 and C6 so the pink
-  /// colour is applied regardless of which octave range the instrument uses.
+  /// The high C is modeled as octave overrides for C5 and C6 so the pink
+  /// color is applied regardless of which octave range the instrument uses.
   static const InstrumentColorScheme myXylophone = InstrumentColorScheme(
     id: 'builtin_my_xylophone',
     name: 'My Xylophone',
