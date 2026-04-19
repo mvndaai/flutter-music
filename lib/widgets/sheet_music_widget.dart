@@ -658,14 +658,7 @@ class _StaffPainter extends CustomPainter {
     if (!showLetter && !showSolfege) return;
 
     final raw = note.letterName.replaceAll(RegExp(r'\d'), '');
-    String label;
-    if (showSolfege && showLetter) {
-      label = note.solfegeName;
-    } else if (showSolfege) {
-      label = note.solfegeName;
-    } else {
-      label = raw;
-    }
+    final label = showSolfege ? note.solfegeName : raw;
 
     final filled = note.type != 'whole' && note.type != 'half';
     final textColor = filled
