@@ -206,7 +206,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         }
 
         final rowsPerPage =
-            ((pageHeight - headerHeight) / rowHeight).floor().clamp(1, 9999);
+            ((pageHeight - headerHeight) / rowHeight).floor().clamp(1, rows.length);
 
         for (int pageStart = 0;
             pageStart < rows.length;
