@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// ── Color utilities ───────────────────────────────────────────────────────────
+
+/// Converts [color] to a 6-digit uppercase hex string (e.g. `"E91E63"`).
+String colorToHex(Color color) =>
+    color.value.toRadixString(16).toUpperCase().padLeft(8, '0').substring(2);
+
+/// Parses a 6-digit hex string (without `#`) to a [Color], or returns `null`
+/// if [hex] is not exactly 6 valid hex digits.
+Color? hexToColor(String hex) {
+  if (hex.length != 6) return null;
+  final parsed = int.tryParse('FF$hex', radix: 16);
+  return parsed != null ? Color(parsed) : null;
+}
+
 /// A simple preset color palette dialog.
 ///
 /// Call [showNoteColorPicker] to let the user pick one color from a curated
@@ -34,7 +48,7 @@ class _NoteColorPickerDialogState extends State<_NoteColorPickerDialog> {
   void initState() {
     super.initState();
     _selected = widget.current;
-    _hexController = TextEditingController(text: _colorToHex(_selected));
+    _hexController = TextEditingController(text: colorToHex(_selected));
   }
 
   @override
@@ -43,19 +57,14 @@ class _NoteColorPickerDialogState extends State<_NoteColorPickerDialog> {
     super.dispose();
   }
 
-  String _colorToHex(Color c) =>
-      c.value.toRadixString(16).toUpperCase().padLeft(8, '0').substring(2);
-
   void _onHexChanged(String value) {
-    if (value.length == 6) {
-      final parsed = int.tryParse('FF$value', radix: 16);
-      if (parsed != null) {
-        setState(() {
-          _selected = Color(parsed);
-          _hexError = false;
-        });
-        return;
-      }
+    final color = hexToColor(value);
+    if (color != null) {
+      setState(() {
+        _selected = color;
+        _hexError = false;
+      });
+      return;
     }
     setState(() => _hexError = value.isNotEmpty && value.length != 6);
   }
@@ -63,7 +72,7 @@ class _NoteColorPickerDialogState extends State<_NoteColorPickerDialog> {
   void _selectPaletteColor(Color color) {
     setState(() {
       _selected = color;
-      _hexController.text = _colorToHex(color);
+      _hexController.text = colorToHex(color);
       _hexError = false;
     });
   }

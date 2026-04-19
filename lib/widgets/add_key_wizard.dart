@@ -4,6 +4,13 @@ import 'package:flutter/services.dart';
 import '../services/audio_service.dart';
 import 'note_color_picker.dart';
 
+// Luminance threshold above which black text is readable on the color swatch.
+const double _kContrastLuminanceThreshold = 0.35;
+// Note keys longer than this character count get a smaller font in the swatch.
+const int _kLongNoteLengthThreshold = 3;
+const double _kSmallNoteFontSize = 10;
+const double _kNormalNoteFontSize = 14;
+
 /// Result returned by [showAddKeyWizard].
 class AddKeyResult {
   /// The note key string, e.g. `"C5"`, `"F#4"`.
@@ -61,7 +68,7 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
   void initState() {
     super.initState();
     _selectedColor = widget.initialColor;
-    _hexCtrl = TextEditingController(text: _colorToHex(_selectedColor));
+    _hexCtrl = TextEditingController(text: colorToHex(_selectedColor));
   }
 
   @override
@@ -74,9 +81,6 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-
-  String _colorToHex(Color c) =>
-      c.value.toRadixString(16).toUpperCase().padLeft(8, '0').substring(2);
 
   // ── Mic handling ─────────────────────────────────────────────────────────
 
@@ -131,15 +135,13 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
   // ── Color step helpers ────────────────────────────────────────────────────
 
   void _onHexChanged(String value) {
-    if (value.length == 6) {
-      final parsed = int.tryParse('FF$value', radix: 16);
-      if (parsed != null) {
-        setState(() {
-          _selectedColor = Color(parsed);
-          _hexError = false;
-        });
-        return;
-      }
+    final color = hexToColor(value);
+    if (color != null) {
+      setState(() {
+        _selectedColor = color;
+        _hexError = false;
+      });
+      return;
     }
     setState(() => _hexError = value.isNotEmpty && value.length != 6);
   }
@@ -147,7 +149,7 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
   void _pickPaletteColor(Color color) {
     setState(() {
       _selectedColor = color;
-      _hexCtrl.text = _colorToHex(color);
+      _hexCtrl.text = colorToHex(color);
       _hexError = false;
     });
   }
@@ -359,11 +361,14 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
                   child: Text(
                     _confirmedNote,
                     style: TextStyle(
-                      color: _selectedColor.computeLuminance() > 0.35
+                      color: _selectedColor.computeLuminance() >
+                              _kContrastLuminanceThreshold
                           ? Colors.black87
                           : Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: _confirmedNote.length > 3 ? 10 : 14,
+                      fontSize: _confirmedNote.length > _kLongNoteLengthThreshold
+                          ? _kSmallNoteFontSize
+                          : _kNormalNoteFontSize,
                     ),
                   ),
                 ),
