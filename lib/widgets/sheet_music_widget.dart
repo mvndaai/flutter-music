@@ -79,6 +79,8 @@ class SheetMusicWidget extends StatelessWidget {
   final int activeNoteIndex;
   final bool showSolfege;
   final bool showLetter;
+  final bool labelsBelow;
+  final bool coloredLabels;
   final int measuresPerRow;
 
   const SheetMusicWidget({
@@ -87,6 +89,8 @@ class SheetMusicWidget extends StatelessWidget {
     this.activeNoteIndex = -1,
     this.showSolfege = false,
     this.showLetter = true,
+    this.labelsBelow = true,
+    this.coloredLabels = false,
     this.measuresPerRow = 4,
   });
 
@@ -138,6 +142,8 @@ class SheetMusicWidget extends StatelessWidget {
               activeNoteIndex: activeNoteIndex,
               showSolfege: showSolfege,
               showLetter: showLetter,
+              labelsBelow: labelsBelow,
+              coloredLabels: coloredLabels,
             ),
           ),
         ],
@@ -186,12 +192,16 @@ class _StaffRow extends StatelessWidget {
   final int activeNoteIndex;
   final bool showSolfege;
   final bool showLetter;
+  final bool labelsBelow;
+  final bool coloredLabels;
 
   const _StaffRow({
     required this.row,
     required this.activeNoteIndex,
     required this.showSolfege,
     required this.showLetter,
+    required this.labelsBelow,
+    required this.coloredLabels,
   });
 
   @override
@@ -209,6 +219,8 @@ class _StaffRow extends StatelessWidget {
               activeNoteIndex: activeNoteIndex,
               showSolfege: showSolfege,
               showLetter: showLetter,
+              labelsBelow: labelsBelow,
+              coloredLabels: coloredLabels,
               colorProvider: cp,
             ),
           ),
@@ -225,6 +237,8 @@ class _StaffPainter extends CustomPainter {
   final int activeNoteIndex;
   final bool showSolfege;
   final bool showLetter;
+  final bool labelsBelow;
+  final bool coloredLabels;
   final ColorSchemeProvider colorProvider;
 
   _StaffPainter({
@@ -232,6 +246,8 @@ class _StaffPainter extends CustomPainter {
     required this.activeNoteIndex,
     required this.showSolfege,
     required this.showLetter,
+    required this.labelsBelow,
+    required this.coloredLabels,
     required this.colorProvider,
   }) : super(repaint: colorProvider);
 
@@ -240,6 +256,8 @@ class _StaffPainter extends CustomPainter {
       old.activeNoteIndex != activeNoteIndex ||
       old.showSolfege != showSolfege ||
       old.showLetter != showLetter ||
+      old.labelsBelow != labelsBelow ||
+      old.coloredLabels != coloredLabels ||
       old.row != row;
 
   // ── paint ──────────────────────────────────────────────────────────────────
@@ -306,7 +324,8 @@ class _StaffPainter extends CustomPainter {
     // '𝄞' (U+1D11E) treble clef — positioned so the G4 curl sits on the G4 line.
     // G4 is at staff position 2 → y = _posToY(2).
     final g4y = _posToY(2);
-    const clefFontSize = _kLS * 5.8;
+    // Reduced size to fit within staff lines
+    const clefFontSize = _kLS * 4.2;
     // Place the text so the curl (≈50% from top of glyph) aligns with G4.
     _drawText(
       canvas,
@@ -404,9 +423,9 @@ class _StaffPainter extends CustomPainter {
     _drawLedgerLines(canvas, x, pos, alpha);
     _drawAccidental(canvas, note.alter, x, y, alpha);
     _drawNoteHead(canvas, note.type, x, y, color, alpha, isActive);
-    _drawStem(canvas, note.type, x, y, pos, alpha);
+    _drawStem(canvas, note.type, x, y, pos, alpha, color);
     if (note.isDotted) _drawDot(canvas, x, y, alpha);
-    _drawNoteLabel(canvas, note, x, y, color, alpha);
+    _drawNoteLabel(canvas, note, x, y, pos, color, alpha);
   }
 
   // ── Accidental (sharp / flat) ──────────────────────────────────────────────
@@ -504,13 +523,14 @@ class _StaffPainter extends CustomPainter {
     double y,
     int pos,
     double alpha,
+    Color color,
   ) {
     if (type == 'whole') return;
 
     // Stem goes up for notes below the middle space (B4 = pos 4).
     final stemUp = pos < 5;
     final p = Paint()
-      ..color = Colors.black.withValues(alpha: alpha)
+      ..color = color.withValues(alpha: alpha)
       ..strokeWidth = 1.4;
 
     if (stemUp) {
@@ -644,13 +664,14 @@ class _StaffPainter extends CustomPainter {
     );
   }
 
-  // ── Note label (centered inside note head) ────────────────────────────────
+  // ── Note label (centered inside note head or below) ──────────────────────
 
   void _drawNoteLabel(
     Canvas canvas,
     MusicNote note,
     double x,
     double y,
+    int pos,
     Color color,
     double alpha,
   ) {
@@ -661,21 +682,55 @@ class _StaffPainter extends CustomPainter {
     final label = showSolfege ? note.solfegeName : raw;
 
     final filled = note.type != 'whole' && note.type != 'half';
-    final textColor = filled
-        ? NoteColors.textColorFor(color).withValues(alpha: alpha)
-        : color.withValues(alpha: alpha);
 
-    // Fit font size so long labels (e.g. "Sol") still fit inside the oval.
-    final fontSize = label.length > 2 ? _kNRy * 0.95 : _kNRy * 1.15;
+    if (labelsBelow) {
+      // Draw label below the note with outline for better visibility
+      final stemUp = pos < 5;
+      final labelY = stemUp ? y + _kLS * 2.5 : y + _kStem + _kLS * 1.2;
+      
+      if (coloredLabels) {
+        // Use note color for label
+        _drawTextWithOutline(
+          canvas,
+          label,
+          Offset(x, labelY),
+          fontSize: _kLS * 0.85,
+          color: color.withValues(alpha: alpha),
+          outlineColor: Colors.white.withValues(alpha: alpha * 0.8),
+          outlineWidth: 1.8,
+          fontWeight: FontWeight.bold,
+        );
+      } else {
+        // Use black text with white outline
+        _drawTextWithOutline(
+          canvas,
+          label,
+          Offset(x, labelY),
+          fontSize: _kLS * 0.85,
+          color: Colors.black.withValues(alpha: alpha),
+          outlineColor: Colors.white.withValues(alpha: alpha * 0.8),
+          outlineWidth: 1.8,
+          fontWeight: FontWeight.bold,
+        );
+      }
+    } else {
+      // Draw label inside note head (original behavior)
+      final textColor = filled
+          ? NoteColors.textColorFor(color).withValues(alpha: alpha)
+          : color.withValues(alpha: alpha);
 
-    _drawTextCentered(
-      canvas,
-      label,
-      Offset(x, y),
-      fontSize: fontSize,
-      color: textColor,
-      fontWeight: FontWeight.bold,
-    );
+      // Fit font size so long labels (e.g. "Sol") still fit inside the oval.
+      final fontSize = label.length > 2 ? _kNRy * 0.95 : _kNRy * 1.15;
+
+      _drawTextCentered(
+        canvas,
+        label,
+        Offset(x, y),
+        fontSize: fontSize,
+        color: textColor,
+        fontWeight: FontWeight.bold,
+      );
+    }
   }
 
   // ── Double bar line ───────────────────────────────────────────────────────
@@ -740,6 +795,55 @@ class _StaffPainter extends CustomPainter {
       canvas,
       Offset(centre.dx - tp.width / 2, centre.dy - tp.height / 2),
     );
+  }
+
+  /// Draws text with outline for better visibility on any background.
+  void _drawTextWithOutline(
+    Canvas canvas,
+    String text,
+    Offset centre, {
+    double fontSize = 12,
+    Color color = Colors.black,
+    Color outlineColor = Colors.white,
+    double outlineWidth = 1.8,
+    FontWeight fontWeight = FontWeight.normal,
+  }) {
+    final textSpan = TextSpan(
+      text: text,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        foreground: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = outlineWidth
+          ..color = outlineColor,
+      ),
+    );
+    
+    final textSpanFill = TextSpan(
+      text: text,
+      style: TextStyle(
+        fontSize: fontSize,
+        color: color,
+        fontWeight: fontWeight,
+      ),
+    );
+
+    // Draw outline first
+    final tpOutline = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    
+    final offset = Offset(centre.dx - tpOutline.width / 2, centre.dy - tpOutline.height / 2);
+    tpOutline.paint(canvas, offset);
+
+    // Draw fill on top
+    final tpFill = TextPainter(
+      text: textSpanFill,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tpFill.paint(canvas, offset);
   }
 }
 

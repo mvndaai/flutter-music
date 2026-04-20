@@ -11,6 +11,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   static const String _activeIdKey = 'color_scheme_active_id';
   static const String _customSchemesKey = 'color_scheme_custom';
   static const String _showLabelsKey = 'color_scheme_show_labels';
+  static const String _themeModeKey = 'app_theme_mode';
 
   final Uuid _uuid = const Uuid();
 
@@ -19,9 +20,13 @@ class ColorSchemeProvider extends ChangeNotifier {
 
   /// When false, note circles show only color – no text label at all.
   bool _showNoteLabels = true;
+  
+  /// App theme mode: system, light, or dark
+  ThemeMode _themeMode = ThemeMode.system;
 
   bool get showNoteLabels => _showNoteLabels;
   String get activeId => _activeId;
+  ThemeMode get themeMode => _themeMode;
 
   List<InstrumentColorScheme> get allSchemes => [
         ...InstrumentColorScheme.builtIns,
@@ -40,6 +45,14 @@ class ColorSchemeProvider extends ChangeNotifier {
     _activeId =
         prefs.getString(_activeIdKey) ?? InstrumentColorScheme.defaultXylophone.id;
     _showNoteLabels = prefs.getBool(_showLabelsKey) ?? true;
+    
+    // Load theme mode
+    final themeModeStr = prefs.getString(_themeModeKey) ?? 'system';
+    _themeMode = switch (themeModeStr) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
 
     final raw = prefs.getString(_customSchemesKey);
     if (raw != null) {
@@ -76,6 +89,20 @@ class ColorSchemeProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showLabelsKey, value);
+  }
+
+  /// Sets the app theme mode.
+  Future<void> setThemeMode(ThemeMode mode) async {
+    if (_themeMode == mode) return;
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    final modeStr = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    await prefs.setString(_themeModeKey, modeStr);
   }
 
   /// Creates a new custom scheme as a copy of the active scheme.

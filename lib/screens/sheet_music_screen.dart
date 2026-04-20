@@ -24,6 +24,8 @@ class SheetMusicScreen extends StatefulWidget {
 class _SheetMusicScreenState extends State<SheetMusicScreen> {
   bool _showLetter = true;
   bool _showSolfege = false;
+  bool _labelsBelow = true;
+  bool _coloredLabels = false;
   int _measuresPerRow = 4;
 
   void _openSettings() {
@@ -95,6 +97,30 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                   },
                 ),
 
+                // Labels below toggle
+                SwitchListTile(
+                  title: const Text('Labels Below Notes'),
+                  subtitle:
+                      const Text('Show labels under notes instead of inside'),
+                  value: _labelsBelow,
+                  onChanged: (v) {
+                    setState(() => _labelsBelow = v);
+                    setSheetState(() {});
+                  },
+                ),
+
+                // Colored labels toggle
+                SwitchListTile(
+                  title: const Text('Colored Labels'),
+                  subtitle:
+                      const Text('Match label color to note color'),
+                  value: _coloredLabels,
+                  onChanged: (v) {
+                    setState(() => _coloredLabels = v);
+                    setSheetState(() {});
+                  },
+                ),
+
                 const Divider(height: 24),
 
                 // Measures per row
@@ -136,6 +162,37 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                       ),
                     );
                   },
+                ),
+
+                const Divider(height: 24),
+
+                // Theme
+                ListTile(
+                  title: const Text('Theme'),
+                  trailing: DropdownButton<ThemeMode>(
+                    value: provider.themeMode,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(
+                        value: ThemeMode.system,
+                        child: Text('System'),
+                      ),
+                      DropdownMenuItem(
+                        value: ThemeMode.light,
+                        child: Text('Light'),
+                      ),
+                      DropdownMenuItem(
+                        value: ThemeMode.dark,
+                        child: Text('Dark'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) {
+                        provider.setThemeMode(v);
+                        setSheetState(() {});
+                      }
+                    },
+                  ),
                 ),
 
                 const Divider(height: 24),
@@ -303,14 +360,14 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             );
           }),
 
-          // Treble clef
+          // Treble clef - using Unicode symbol
           pw.Positioned(
             left: 2,
-            top: topMargin + staffHeight / 2 - 20,
+            top: topMargin - ls * 0.5,
             child: pw.Text(
               '𝄞',
               style: pw.TextStyle(
-                fontSize: 40,
+                fontSize: ls * 4.2,
                 color: PdfColors.grey800,
               ),
             ),
@@ -581,13 +638,13 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
           child: pw.Container(
             width: 1.2,
             height: stemLength,
-            color: PdfColors.black,
+            color: pdfColor,
           ),
         ),
       );
     }
 
-    // Note label
+    // Note label - positioned below when _labelsBelow is true
     if (_showLetter || _showSolfege) {
       String label = '';
       if (_showLetter && _showSolfege) {
@@ -600,24 +657,47 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         label = note.solfegeName;
       }
 
-      final textColor = color.computeLuminance() > 0.35
-          ? PdfColors.black
-          : PdfColors.white;
-
-      widgets.add(
-        pw.Positioned(
-          left: x - 4,
-          top: y - 4,
-          child: pw.Text(
-            label,
-            style: pw.TextStyle(
-              fontSize: 5,
-              fontWeight: pw.FontWeight.bold,
-              color: textColor,
+      if (_labelsBelow) {
+        // Position label below the note
+        final stemUp = pos < 5;
+        final stemLength = ls * 3.4;
+        final labelY = stemUp ? y + ls * 2.5 : y + stemLength + ls * 1.2;
+        
+        widgets.add(
+          pw.Positioned(
+            left: x - 6,
+            top: labelY - 3,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                fontSize: 7,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.black,
+              ),
             ),
           ),
-        ),
-      );
+        );
+      } else {
+        // Position label inside note head
+        final textColor = color.computeLuminance() > 0.35
+            ? PdfColors.black
+            : PdfColors.white;
+
+        widgets.add(
+          pw.Positioned(
+            left: x - 4,
+            top: y - 4,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                fontSize: 5,
+                fontWeight: pw.FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+          ),
+        );
+      }
     }
 
     return widgets;
@@ -640,6 +720,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         song: widget.song,
         showSolfege: _showSolfege,
         showLetter: _showLetter,
+        labelsBelow: _labelsBelow,
+        coloredLabels: _coloredLabels,
         measuresPerRow: _measuresPerRow,
       ),
       floatingActionButton: FloatingActionButton.extended(
