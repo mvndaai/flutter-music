@@ -788,8 +788,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     }
 
     // Note head
-    final noteHeadWidth = 8.0;
-    final noteHeadHeight = 5.0;
+    const noteHeadWidth = 8.0;
+    const noteHeadHeight = 5.0;
     final filled = note.type != 'whole' && note.type != 'half';
 
     widgets.add(

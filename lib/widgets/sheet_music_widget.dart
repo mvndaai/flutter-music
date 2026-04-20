@@ -364,10 +364,6 @@ class _StaffPainter extends CustomPainter {
     return x;
   }
 
-  bool _isDark(Size size) {
-    return colorProvider.themeMode == ThemeMode.dark;
-  }
-
   // ── Measure number ─────────────────────────────────────────────────────────
 
   void _drawMeasureNumber(Canvas canvas, int number, double x) {
