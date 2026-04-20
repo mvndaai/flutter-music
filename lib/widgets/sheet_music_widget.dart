@@ -382,9 +382,12 @@ class _StaffPainter extends CustomPainter {
         ? 1.0 
         : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
     
-    // Add padding within the measure for visual clarity
-    const measurePadding = 8.0; // padding to prevent overlap with bar lines
-    final contentWidth = measureWidth - (measurePadding * 2);
+    // Add padding within the measure for visual clarity.
+    // Balanced padding and centering within the note's time slot ensures
+    // notes are correctly centered while leaving room for accidentals.
+    const leftPadding = 20.0;
+    const rightPadding = 20.0;
+    final contentWidth = (measureWidth - leftPadding - rightPadding).clamp(0.0, measureWidth);
     
     int playableIdx = 0;
     double cumulativeDuration = 0.0;
@@ -392,8 +395,8 @@ class _StaffPainter extends CustomPainter {
     for (int ni = 0; ni < displayNotes.length; ni++) {
       final note = displayNotes[ni];
       
-      // Position note at the start of its duration slot, with padding
-      final noteX = startX + measurePadding + (cumulativeDuration / totalDuration) * contentWidth;
+      // Position note in the center of its duration slot within the measure
+      final noteX = startX + leftPadding + ((cumulativeDuration + note.duration / 2) / totalDuration) * contentWidth;
 
       if (note.isRest) {
         _drawRest(canvas, noteX, note.type);
