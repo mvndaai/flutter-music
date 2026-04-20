@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -7,6 +8,7 @@ import '../models/measure.dart';
 import '../models/music_note.dart';
 import '../models/song.dart';
 import '../providers/color_scheme_provider.dart';
+import '../services/tone_player.dart';
 import '../widgets/sheet_music_widget.dart';
 import 'practice_screen.dart';
 import 'color_schemes_screen.dart';
@@ -27,6 +29,133 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
   bool _labelsBelow = true;
   bool _coloredLabels = false;
   int _measuresPerRow = 4;
+  
+  // Playback state
+  bool _isPlaying = false;
+  int _activeNoteIndex = -1;
+  Timer? _playbackTimer;
+  int _currentNoteIndexInPlayback = 0;
+  
+  // Tempo in BPM (beats per minute)
+  double _tempo = 120.0;
+  
+  // Audio player
+  final TonePlayer _tonePlayer = TonePlayer();
+  
+  @override
+  void dispose() {
+    _stopPlayback();
+    _tonePlayer.dispose();
+    super.dispose();
+  }
+  
+  void _toggleMetronome() {
+    if (_tonePlayer.isMetronomeRunning) {
+      _tonePlayer.stopMetronome();
+    } else {
+      _tonePlayer.startMetronome(_tempo);
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+  
+  void _togglePlayback() {
+    if (_isPlaying) {
+      _pausePlayback();
+    } else {
+      _startPlayback();
+    }
+  }
+  
+  void _startPlayback() {
+    final notes = widget.song.allNotes;
+    if (notes.isEmpty) return;
+    
+    if (mounted) {
+      setState(() {
+        _isPlaying = true;
+        if (_activeNoteIndex == -1 || _activeNoteIndex >= notes.length - 1) {
+          _activeNoteIndex = 0;
+          _currentNoteIndexInPlayback = 0;
+        }
+      });
+    }
+    
+    _scheduleNextNote();
+  }
+  
+  void _pausePlayback() {
+    _playbackTimer?.cancel();
+    _playbackTimer = null;
+    if (mounted) {
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+  }
+  
+  void _stopPlayback() {
+    _playbackTimer?.cancel();
+    _playbackTimer = null;
+    if (mounted) {
+      setState(() {
+        _isPlaying = false;
+        _activeNoteIndex = -1;
+        _currentNoteIndexInPlayback = 0;
+      });
+    } else {
+      // Widget is being disposed, just update the state without setState
+      _isPlaying = false;
+      _activeNoteIndex = -1;
+      _currentNoteIndexInPlayback = 0;
+    }
+  }
+  
+  void _scheduleNextNote() {
+    final notes = widget.song.allNotes;
+    if (_currentNoteIndexInPlayback >= notes.length) {
+      // Song finished
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _activeNoteIndex = -1;
+          _currentNoteIndexInPlayback = 0;
+        });
+        
+        // Show completion message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎵 Song finished!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    final note = notes[_currentNoteIndexInPlayback];
+    if (mounted) {
+      setState(() {
+        _activeNoteIndex = _currentNoteIndexInPlayback;
+      });
+    }
+    
+    // Play the note sound
+    _tonePlayer.playNote(note.frequency);
+    
+    // Calculate duration in milliseconds
+    // Assuming quarter note = 1.0 duration, and tempo is in BPM
+    final quarterNoteDuration = 60000.0 / _tempo; // milliseconds per quarter note
+    final noteDurationMs = (note.duration * quarterNoteDuration).toInt();
+    
+    _playbackTimer = Timer(Duration(milliseconds: noteDurationMs), () {
+      _currentNoteIndexInPlayback++;
+      if (_isPlaying && mounted) {
+        _scheduleNextNote();
+      }
+    });
+  }
 
   void _openSettings() {
     showModalBottomSheet(
@@ -45,28 +174,29 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
               top: 12,
               bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  'Settings',
-                  style: Theme.of(sheetCtx).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const Divider(height: 24),
+                  Text(
+                    'Settings',
+                    style: Theme.of(sheetCtx).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const Divider(height: 24),
 
                 // Letters toggle
                 SwitchListTile(
@@ -119,6 +249,32 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                     setState(() => _coloredLabels = v);
                     setSheetState(() {});
                   },
+                ),
+
+                const Divider(height: 24),
+
+                // Tempo/Speed control
+                ListTile(
+                  title: const Text('Tempo'),
+                  subtitle: Text('${_tempo.round()} BPM'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Slider(
+                    value: _tempo,
+                    min: 40,
+                    max: 240,
+                    divisions: 40,
+                    label: '${_tempo.round()} BPM',
+                    onChanged: (v) {
+                      setState(() => _tempo = v);
+                      setSheetState(() {});
+                      // Restart metronome if running
+                      if (_tonePlayer.isMetronomeRunning) {
+                        _tonePlayer.startMetronome(_tempo);
+                      }
+                    },
+                  ),
                 ),
 
                 const Divider(height: 24),
@@ -209,6 +365,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                 ),
               ],
             ),
+            ),
           );
         },
       ),
@@ -259,6 +416,13 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             ),
           );
         }
+
+        // Calculate total duration across ALL measures for consistent spacing
+        final totalSongDuration = song.measures.fold(0.0, (sum, m) {
+          final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
+          final measureDuration = displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (s, n) => s + n.duration);
+          return sum + measureDuration;
+        });
 
         final rowsPerPage =
             ((pageHeight - headerHeight) / rowHeight).floor().clamp(1, rows.length);
@@ -314,6 +478,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                           timeSigWidth,
                           isFirstRow,
                           isLastRow,
+                          totalSongDuration,
                         ),
                       );
                     }),
@@ -341,6 +506,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     double timeSigWidth,
     bool isFirstRow,
     bool isLastRow,
+    double totalSongDuration,
   ) {
     return pw.SizedBox(
       height: topMargin + staffHeight + topMargin,
@@ -413,6 +579,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             timeSigWidth,
             isFirstRow,
             isLastRow,
+            totalSongDuration,
           ),
         ],
       ),
@@ -431,23 +598,26 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     double timeSigWidth,
     bool isFirstRow,
     bool isLastRow,
+    double totalSongDuration,
   ) {
     final widgets = <pw.Widget>[];
     double x = clefWidth + (isFirstRow ? timeSigWidth : 0);
 
-    // Calculate spacing
-    final slotCounts = measures
-        .map((m) => m.notes.where((n) => !n.isChordContinuation).length)
-        .map((count) => count.clamp(1, 999))
-        .toList();
-    final totalSlots = slotCounts.fold<int>(0, (sum, count) => sum + count);
+    // Calculate duration for each measure in this row 
+    final measureDurations = measures.map((m) {
+      final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
+      return displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
+    }).toList();
+    
+    // Calculate total duration for THIS ROW and use it for spacing
+    final rowTotalDuration = measureDurations.fold(0.0, (s, d) => s + d);
     final availWidth = width - x;
-    final slotWidth = totalSlots > 0 ? (availWidth / totalSlots) : 24.0;
+    final pixelsPerDuration = rowTotalDuration > 0 ? (availWidth / rowTotalDuration) : 24.0;
 
     for (int mi = 0; mi < measures.length; mi++) {
       final measure = measures[mi];
-      final measureSlots = slotCounts[mi];
-      final measureWidth = measureSlots * slotWidth;
+      final measureDuration = measureDurations[mi];
+      final measureWidth = measureDuration * pixelsPerDuration;
 
       // Measure number
       widgets.add(
@@ -466,10 +636,21 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
       // Notes in measure
       final displayNotes = measure.notes.where((n) => !n.isChordContinuation).toList();
+      final noteTotalDuration = displayNotes.isEmpty 
+          ? 1.0 
+          : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
+      
+      // Add padding within the measure for visual clarity
+      const measurePadding = 8.0; // padding to prevent overlap with bar lines
+      final contentWidth = measureWidth - (measurePadding * 2);
+      
+      double cumulativeDuration = 0.0;
       for (int ni = 0; ni < displayNotes.length; ni++) {
         final note = displayNotes[ni];
         if (!note.isRest) {
-          final noteX = x + (ni + 0.5) * slotWidth;
+          // Position note at the start of its duration slot, with padding
+          final noteX = x + measurePadding + (cumulativeDuration / noteTotalDuration) * contentWidth;
+          
           widgets.addAll(_buildNote(
             note,
             noteX,
@@ -479,6 +660,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             provider,
           ));
         }
+        cumulativeDuration += note.duration;
       }
 
       x += measureWidth;
@@ -710,6 +892,22 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         title: Text(widget.song.title),
         actions: [
           IconButton(
+            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+            tooltip: _isPlaying ? 'Pause' : 'Play',
+            onPressed: _togglePlayback,
+          ),
+          IconButton(
+            icon: Icon(
+              _tonePlayer.isMetronomeRunning 
+                ? Icons.stop 
+                : Icons.av_timer,
+            ),
+            tooltip: _tonePlayer.isMetronomeRunning 
+              ? 'Stop Metronome' 
+              : 'Start Metronome',
+            onPressed: _toggleMetronome,
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
             onPressed: _openSettings,
@@ -722,6 +920,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         showLetter: _showLetter,
         labelsBelow: _labelsBelow,
         coloredLabels: _coloredLabels,
+        activeNoteIndex: _activeNoteIndex,
         measuresPerRow: _measuresPerRow,
       ),
       floatingActionButton: FloatingActionButton.extended(

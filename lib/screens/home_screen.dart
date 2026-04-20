@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/song_provider.dart';
 import '../models/song.dart';
 import '../widgets/tag_chip.dart';
@@ -46,6 +47,16 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const ShareScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report_outlined),
+            tooltip: 'Report issue / feedback',
+            onPressed: () async {
+              final uri = Uri.parse('https://github.com/mvndaai/flutter-music/issues');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.add),

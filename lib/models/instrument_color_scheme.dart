@@ -112,17 +112,14 @@ class InstrumentColorScheme {
   // ── Built-in schemes ──────────────────────────────────────────────────────
 
   /// Xylophone with the traditional 8-bar diatonic palette:
-  /// C=purple, D=blue, E=green, F=lime, G=yellow, A=orange, B=red, C(high)=pink.
-  ///
-  /// The high C is modeled as octave overrides for C5 and C6 so the pink
-  /// color is applied regardless of which octave range the instrument uses.
+  /// C=pink, D=blue, E=green, F=lime, G=yellow, A=orange, B=red.
   static const InstrumentColorScheme myXylophone = InstrumentColorScheme(
     id: 'builtin_my_xylophone',
     name: 'My Xylophone',
     isBuiltIn: true,
     colors: {
-      'C': Color(0xFF9C27B0),  // purple
-      'C#': Color(0xFF7B1FA2),
+      'C': Color(0xFFE91E63),  // pink
+      'C#': Color(0xFFD81B60),
       'D': Color(0xFF1E88E5),  // blue
       'D#': Color(0xFF1565C0),
       'E': Color(0xFF43A047),  // green
@@ -133,10 +130,6 @@ class InstrumentColorScheme {
       'A': Color(0xFFF57C00),  // orange
       'A#': Color(0xFFE65100),
       'B': Color(0xFFE53935),  // red
-    },
-    octaveOverrides: {
-      'C5': Color(0xFFE91E63),  // pink – high C on an alto xylophone (C4–C5)
-      'C6': Color(0xFFE91E63),  // pink – high C on a soprano xylophone (C5–C6)
     },
   );
 

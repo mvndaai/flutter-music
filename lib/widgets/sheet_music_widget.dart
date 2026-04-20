@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/song.dart';
@@ -107,30 +106,6 @@ class SheetMusicWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Song header ─────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  song.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                if (song.composer.isNotEmpty)
-                  Text(
-                    song.composer,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                  ),
-              ],
-            ),
-          ),
-          const Divider(),
-
           // ── Note colour legend ───────────────────────────────────────────
           _ColorLegend(showSolfege: showSolfege),
           const SizedBox(height: 16),
@@ -152,6 +127,13 @@ class SheetMusicWidget extends StatelessWidget {
   }
 
   List<_RowData> _buildRows() {
+    // Calculate total duration across ALL measures for consistent spacing
+    final totalDuration = song.measures.fold(0.0, (sum, m) {
+      final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
+      final measureDuration = displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (s, n) => s + n.duration);
+      return sum + measureDuration;
+    });
+    
     final rows = <_RowData>[];
     int noteOffset = 0;
     for (int i = 0; i < song.measures.length; i += measuresPerRow) {
@@ -162,6 +144,7 @@ class SheetMusicWidget extends StatelessWidget {
         firstNoteIndex: noteOffset,
         isFirstRow: i == 0,
         isLastRow: end == song.measures.length,
+        totalSongDuration: totalDuration,
       ));
       noteOffset += batch.fold(0, (s, m) => s + m.playableNotes.length);
     }
@@ -176,12 +159,14 @@ class _RowData {
   final int firstNoteIndex;
   final bool isFirstRow;
   final bool isLastRow;
+  final double totalSongDuration;
 
   const _RowData({
     required this.measures,
     required this.firstNoteIndex,
     required this.isFirstRow,
     required this.isLastRow,
+    required this.totalSongDuration,
   });
 }
 
@@ -268,22 +253,25 @@ class _StaffPainter extends CustomPainter {
 
     double x = _drawClefAndTimeSig(canvas);
 
-    // Distribute available width evenly among all note/rest slots.
-    final slotCounts = row.measures
-        .map((m) => math.max(1, m.notes.where((n) => !n.isChordContinuation).length))
-        .toList();
-    final totalSlots = slotCounts.fold(0, (s, c) => s + c);
+    // Calculate duration for each measure in this row
+    final measureDurations = row.measures.map((m) {
+      final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
+      return displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
+    }).toList();
+    
+    // Calculate total duration for THIS ROW and use it for spacing
+    final rowTotalDuration = measureDurations.fold(0.0, (s, d) => s + d);
     final availW = size.width - x;
-    final slotW = totalSlots > 0 ? (availW / totalSlots) : 24.0;
+    final pixelsPerDuration = rowTotalDuration > 0 ? (availW / rowTotalDuration) : 24.0;
 
     int noteOffset = row.firstNoteIndex;
     for (int mi = 0; mi < row.measures.length; mi++) {
       final m = row.measures[mi];
-      final mSlots = slotCounts[mi];
-      final measureW = mSlots * slotW;
+      final measureDuration = measureDurations[mi];
+      final measureW = measureDuration * pixelsPerDuration;
 
       _drawMeasureNumber(canvas, m.number, x);
-      _drawMeasureNotes(canvas, m, x, slotW, noteOffset);
+      _drawMeasureNotes(canvas, m, x, measureW, noteOffset);
       noteOffset += m.playableNotes.length;
       x += measureW;
 
@@ -383,16 +371,29 @@ class _StaffPainter extends CustomPainter {
     Canvas canvas,
     Measure m,
     double startX,
-    double slotW,
+    double measureWidth,
     int noteOffset,
   ) {
     final displayNotes =
         m.notes.where((n) => !n.isChordContinuation).toList();
+    
+    // Calculate total duration for proportional spacing
+    final totalDuration = displayNotes.isEmpty 
+        ? 1.0 
+        : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
+    
+    // Add padding within the measure for visual clarity
+    const measurePadding = 8.0; // padding to prevent overlap with bar lines
+    final contentWidth = measureWidth - (measurePadding * 2);
+    
     int playableIdx = 0;
+    double cumulativeDuration = 0.0;
 
     for (int ni = 0; ni < displayNotes.length; ni++) {
       final note = displayNotes[ni];
-      final noteX = startX + (ni + 0.5) * slotW;
+      
+      // Position note at the start of its duration slot, with padding
+      final noteX = startX + measurePadding + (cumulativeDuration / totalDuration) * contentWidth;
 
       if (note.isRest) {
         _drawRest(canvas, noteX, note.type);
@@ -403,6 +404,8 @@ class _StaffPainter extends CustomPainter {
         _drawNote(canvas, note, noteX, isActive, isPast);
         playableIdx++;
       }
+      
+      cumulativeDuration += note.duration;
     }
   }
 
