@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../models/song.dart';
 import '../services/musicxml_parser.dart';
@@ -40,11 +41,34 @@ class SongProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _songs = await _storage.getAllSongs();
+      // Load sample songs on first run (empty library)
+      if (_songs.isEmpty) {
+        await _loadSampleSongs();
+      }
     } catch (e) {
       _error = e.toString();
     } finally {
       _loading = false;
       notifyListeners();
+    }
+  }
+
+  /// Loads sample songs from the assets folder into the library.
+  Future<void> _loadSampleSongs() async {
+    final sampleSongs = [
+      'assets/sample_songs/twinkle_twinkle.xml',
+    ];
+
+    for (final assetPath in sampleSongs) {
+      try {
+        final xmlContent = await rootBundle.loadString(assetPath);
+        await addSongFromXml(
+          xmlContent,
+          tags: ['Sample', 'Kids Songs'],
+        );
+      } catch (e) {
+        debugPrint('Failed to load sample song $assetPath: $e');
+      }
     }
   }
 
