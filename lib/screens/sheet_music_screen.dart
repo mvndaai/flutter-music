@@ -550,6 +550,13 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     double totalSongDuration,
     pw.Font musicFont,
   ) {
+    // Calculate actual width occupied by measures in this row
+    final double startX = clefWidth + (isFirstRow ? timeSigWidth : 0);
+    final double availWidth = width - startX;
+    final double measureWidth = availWidth / provider.measuresPerRow;
+    // Cap the lines at the actual number of measures in this row
+    final double actualWidth = startX + (measures.length * measureWidth);
+
     return pw.SizedBox(
       height: topMargin + staffHeight + topMargin,
       width: width,
@@ -559,9 +566,9 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
           ...List.generate(5, (i) {
             return pw.Positioned(
               left: 0,
-              right: 0,
               top: topMargin + i * ls,
               child: pw.Container(
+                width: actualWidth,
                 height: 0.5,
                 color: PdfColors.grey700,
               ),

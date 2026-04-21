@@ -269,13 +269,15 @@ class _StaffPainter extends CustomPainter {
       ..color = clefColor.withValues(alpha: 0.6)
       ..strokeWidth = 1.0;
 
-    _drawStaffLines(canvas, size.width, linePaint);
-
     double x = _drawClefAndTimeSig(canvas, clefColor);
+    final double startX = x;
 
     // Make all measures the same width using measuresPerRow (not actual count)
-    final availW = size.width - x;
+    final availW = size.width - startX;
     final measureW = availW / row.measuresPerRow;
+    final actualW = startX + (row.measures.length * measureW);
+
+    _drawStaffLines(canvas, actualW, linePaint);
 
     int noteOffset = row.firstNoteIndex;
     for (int mi = 0; mi < row.measures.length; mi++) {
