@@ -57,6 +57,7 @@ class SongProvider extends ChangeNotifier {
   Future<void> _loadSampleSongs() async {
     final sampleSongs = [
       'assets/sample_songs/twinkle_twinkle.xml',
+      'assets/sample_songs/mary_had_a_little_lamb.xml',
     ];
 
     for (final assetPath in sampleSongs) {
