@@ -143,6 +143,12 @@ class _PracticeScreenState extends State<PracticeScreen>
     if ((detectedMidi - targetMidi).abs() <= 1) {
       // Correct note heard – advance
       _advance();
+
+      // Pause briefly to avoid re-triggering on the same note
+      _noteSubscription?.pause();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _noteSubscription?.resume();
+      });
     }
   }
 
