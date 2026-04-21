@@ -244,6 +244,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                       divisions: 40,
                       label: '${_tempo.round()} BPM',
                       onChanged: (v) {
+                        setSheetState(() => _tempo = v);
                         setState(() => _tempo = v);
                         // Restart metronome if running
                         if (_tonePlayer.isMetronomeRunning) {
