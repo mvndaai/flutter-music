@@ -26,9 +26,6 @@ const double _kStem = _kLS * 3.4;
 /// Horizontal space reserved at the start of each row for the treble clef.
 const double _kClefW = 44.0;
 
-/// Space reserved for the time signature (first row only).
-const double _kTimeSigW = 22.0;
-
 /// Pixels above the top staff line (head-room for high notes + ledger lines).
 const double _kTopMargin = _kLS * 3.2;
 
@@ -202,7 +199,6 @@ class _StaffRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cp = context.watch<ColorSchemeProvider>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),

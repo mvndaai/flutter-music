@@ -285,7 +285,6 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: ThemeData(brightness: Brightness.dark),
         home: Scaffold(body: Builder(builder: (context) {
-          final color = InstrumentColorScheme.black.colorForNote('C', 0, context: context);
           // If the test environment doesn't propagate theme brightness correctly to the builder,
           // we can also test by passing it explicitly.
           final colorExplicit = InstrumentColorScheme.black.colorForNote('C', 0, brightness: Brightness.dark);
@@ -299,7 +298,7 @@ void main() {
     });
 
     test('toJson / fromJson roundtrip preserves name and colors', () {
-      final scheme = InstrumentColorScheme(
+      const scheme = InstrumentColorScheme(
         id: 'test_id',
         name: 'Test',
         colors: {'C': Colors.red},
@@ -311,7 +310,7 @@ void main() {
     });
 
     test('copyWith changes only specified fields', () {
-      final original = InstrumentColorScheme(
+      const original = InstrumentColorScheme(
         id: 'test_id',
         name: 'Original',
         colors: {'C': Colors.red},
