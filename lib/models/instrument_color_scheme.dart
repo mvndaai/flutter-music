@@ -154,25 +154,23 @@ class InstrumentColorScheme {
   );
 
   /// Xylophone with the traditional 8-bar diatonic palette:
-  /// C=pink, D=blue, E=green, F=lime, G=yellow, A=orange, B=red.
-  static const InstrumentColorScheme myXylophone = InstrumentColorScheme(
+  /// C=purple, D=blue, E=green, F=lime green, G=yellow, A=orange, B=red, C(high)=pink.
+  static const InstrumentColorScheme ltXylophone1980s = InstrumentColorScheme(
     id: 'builtin_xylophone_little_tykes_1980s',
     name: 'Xylophone: Little Tikes 1980s ',
     icon: 'https://img.icons8.com/fluency/96/xylophone.png',
     isBuiltIn: true,
     colors: {
-      'C': Color(0xFFE91E63),  // pink
-      'C#': Color(0xFFD81B60),
+      'C': Color(0xFF8E24AA),  // purple
       'D': Color(0xFF1E88E5),  // blue
-      'D#': Color(0xFF1565C0),
       'E': Color(0xFF43A047),  // green
       'F': Color(0xFF8BC34A),  // lime green
-      'F#': Color(0xFF558B2F),
       'G': Color(0xFFFDD835),  // yellow
-      'G#': Color(0xFFF9A825),
       'A': Color(0xFFF57C00),  // orange
-      'A#': Color(0xFFE65100),
       'B': Color(0xFFE53935),  // red
+    },
+    octaveOverrides: {
+      'C5': Color(0xFFE91E63), // pink (high C)
     },
   );
 
@@ -198,34 +196,10 @@ class InstrumentColorScheme {
     },
   );
 
-  /// Soft pastel tones, easy on the eyes.
-  static const InstrumentColorScheme pastel = InstrumentColorScheme(
-    id: 'builtin_pastel',
-    name: 'Pastel',
-    icon: 'https://img.icons8.com/color/96/palette.png',
-    isBuiltIn: true,
-    colors: {
-      'C': Color(0xFFFF9AA2),
-      'C#': Color(0xFFFFB7B2),
-      'D': Color(0xFFFFDAC1),
-      'D#': Color(0xFFE2F0CB),
-      'E': Color(0xFFB5EAD7),
-      'F': Color(0xFF9BE7E0),
-      'F#': Color(0xFFC7CEEA),
-      'G': Color(0xFFAEC6CF),
-      'G#': Color(0xFFB5B9FF),
-      'A': Color(0xFFF9D0C4),
-      'A#': Color(0xFFD4F0F0),
-      'B': Color(0xFFE8D5C4),
-    },
-  );
 
   static const List<InstrumentColorScheme> builtIns = [
     black,
-    myXylophone,
-    defaultXylophone,
     rainbow,
-    pastel,
-    monochrome,
+    ltXylophone1980s,
   ];
 }
