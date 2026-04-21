@@ -483,6 +483,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                                     isLastRow,
                                     totalSongDuration,
                                     musicFont,
+                                    rowIndex > 0 ? rows[rowIndex - 1].last : null,
                                   ),
                                 ],
                               ),
@@ -549,9 +550,10 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     bool isLastRow,
     double totalSongDuration,
     pw.Font musicFont,
+    Measure? previousMeasure,
   ) {
     // Calculate actual width occupied by measures in this row
-    final double startX = clefWidth + (isFirstRow ? timeSigWidth : 0);
+    final double startX = clefWidth;
     final double availWidth = width - startX;
     final double measureWidth = availWidth / provider.measuresPerRow;
     // Cap the lines at the actual number of measures in this row
@@ -589,34 +591,6 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             ),
           ),
 
-          // Time signature (first row only)
-          if (isFirstRow && measures.isNotEmpty) ...[
-            pw.Positioned(
-              left: clefWidth + 2,
-              top: topMargin + ls * 0.2,
-              child: pw.Text(
-                '${measures.first.beats}',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ),
-            pw.Positioned(
-              left: clefWidth + 2,
-              top: topMargin + staffHeight / 2 + ls * 0.2,
-              child: pw.Text(
-                '${measures.first.beatType}',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ),
-          ],
-
           // Notes and bar lines
           ..._buildMeasuresContent(
             measures,
@@ -631,6 +605,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
             isLastRow,
             totalSongDuration,
             musicFont,
+            context,
+            previousMeasure,
           ),
         ],
       ),
@@ -651,16 +627,53 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     bool isLastRow,
     double totalSongDuration,
     pw.Font musicFont,
+    BuildContext context,
+    Measure? previousMeasure,
   ) {
     final widgets = <pw.Widget>[];
-    double x = clefWidth + (isFirstRow ? timeSigWidth : 0);
+    double x = clefWidth;
 
     // Make all measures the same width using measuresPerRow (not actual count)
     final availWidth = width - x;
     final measureWidth = availWidth / provider.measuresPerRow;
 
+    Measure? currentPrevMeasure = previousMeasure;
+
     for (int mi = 0; mi < measures.length; mi++) {
       final measure = measures[mi];
+
+      // Time signature if it changed
+      if (currentPrevMeasure == null || 
+          measure.beats != currentPrevMeasure.beats || 
+          measure.beatType != currentPrevMeasure.beatType) {
+        widgets.addAll([
+          pw.Positioned(
+            left: x + 2,
+            top: topMargin + ls * 0.2,
+            child: pw.Text(
+              '${measure.beats}',
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey800,
+              ),
+            ),
+          ),
+          pw.Positioned(
+            left: x + 2,
+            top: topMargin + staffHeight / 2 + ls * 0.2,
+            child: pw.Text(
+              '${measure.beatType}',
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey800,
+              ),
+            ),
+          ),
+        ]);
+      }
+      currentPrevMeasure = measure;
 
       // Measure number
       widgets.add(
@@ -686,23 +699,135 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
       // Add padding within the measure for visual clarity
       const leftPadding = 20.0;
       const rightPadding = 20.0;
+      final contentWidth = (measureWidth - leftPadding - rightPadding).clamp(0.0, measureWidth);
       
       double cumulativeDuration = 0.0;
       for (int ni = 0; ni < displayNotes.length; ni++) {
         final note = displayNotes[ni];
-        if (!note.isRest) {
-          // Position note in the center of its duration slot within the measure (matching screen behavior)
-          final noteX = x + leftPadding + ((cumulativeDuration + note.duration / 2) / noteTotalDuration) * (measureWidth - leftPadding - rightPadding).clamp(0.0, measureWidth);
-          
-          widgets.addAll(_buildNote(
-            note,
-            noteX,
-            topMargin,
-            staffHeight,
-            ls,
-            provider,
-            musicFont,
-          ));
+        
+        // Position note in the center of its duration slot within the measure (matching screen behavior)
+        final noteX = x + leftPadding + ((cumulativeDuration + note.duration / 2) / noteTotalDuration) * contentWidth;
+
+        if (note.isRest) {
+           // TODO: Implement rest drawing for PDF if needed
+        } else {
+          // Beaming logic for PDF
+          bool isBeamed = false;
+          if (note.beam != null) {
+            if (note.beam == 'begin' || note.beam == 'continue') {
+              // Look for the next note in this beam
+              int nextNi = ni + 1;
+              MusicNote? nextNote;
+              while (nextNi < displayNotes.length) {
+                final candidate = displayNotes[nextNi];
+                if (!candidate.isRest) {
+                  nextNote = candidate;
+                  break;
+                }
+                nextNi++;
+              }
+
+              if (nextNote != null && (nextNote.beam == 'continue' || nextNote.beam == 'end')) {
+                isBeamed = true;
+                final nextX = x + leftPadding + ((cumulativeDuration + note.duration + nextNote.duration / 2) / noteTotalDuration) * contentWidth;
+                
+                const diatonic = {'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6};
+                final pos = note.octave * 7 + (diatonic[note.step] ?? 0) - 30;
+                final nextPos = nextNote.octave * 7 + (diatonic[nextNote.step] ?? 0) - 30;
+                
+                final stemUp = pos < 5;
+                final y = topMargin + staffHeight - pos * ls / 2;
+                final nextY = topMargin + staffHeight - nextPos * ls / 2;
+                
+                final stemLength = ls * 3.4;
+                final stemTipY = y + (stemUp ? -stemLength : stemLength);
+                final nextStemTipY = nextY + (stemUp ? -stemLength : stemLength);
+
+                widgets.addAll(_buildNote(
+                  note,
+                  noteX,
+                  topMargin,
+                  staffHeight,
+                  ls,
+                  provider,
+                  musicFont,
+                  forcedStemUp: stemUp,
+                  noFlags: true,
+                ));
+
+                // Draw beam
+                final color = provider.colorForNote(
+                  note.step,
+                  note.alter,
+                  octave: note.octave,
+                  brightness: Brightness.light,
+                );
+                final pdfColor = PdfColor(color.r, color.g, color.b);
+                
+                const noteHeadWidth = 8.0;
+                final beamStartX = noteX + (stemUp ? noteHeadWidth / 2 - 0.6 : -noteHeadWidth / 2 + 0.6);
+                final beamEndX = nextX + (stemUp ? noteHeadWidth / 2 - 0.6 : -noteHeadWidth / 2 + 0.6);
+
+                widgets.add(
+                  pw.Positioned(
+                    left: 0,
+                    top: 0,
+                    child: pw.CustomPaint(
+                      size: const PdfPoint(0, 0),
+                      painter: (PdfGraphics canvas, PdfPoint size) {
+                        canvas.setStrokeColor(pdfColor);
+                        canvas.setLineWidth(3.5);
+                        canvas.drawLine(beamStartX, -stemTipY, beamEndX, -nextStemTipY);
+                        canvas.strokePath();
+                      },
+                    ),
+                  ),
+                );
+              }
+            } else if (note.beam == 'end' || note.beam == 'continue') {
+              // Handled by forward drawing, but we still need to draw this note correctly
+              int prevNi = ni - 1;
+              MusicNote? startNote;
+              while (prevNi >= 0) {
+                final candidate = displayNotes[prevNi];
+                if (!candidate.isRest && candidate.beam == 'begin') {
+                  startNote = candidate;
+                  break;
+                }
+                prevNi--;
+              }
+              
+              const diatonic = {'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6};
+              final stemUp = startNote != null 
+                ? (startNote.octave * 7 + (diatonic[startNote.step] ?? 0) - 30) < 5 
+                : (note.octave * 7 + (diatonic[note.step] ?? 0) - 30) < 5;
+
+              widgets.addAll(_buildNote(
+                note,
+                noteX,
+                topMargin,
+                staffHeight,
+                ls,
+                provider,
+                musicFont,
+                forcedStemUp: stemUp,
+                noFlags: true,
+              ));
+              isBeamed = true;
+            }
+          }
+
+          if (!isBeamed) {
+            widgets.addAll(_buildNote(
+              note,
+              noteX,
+              topMargin,
+              staffHeight,
+              ls,
+              provider,
+              musicFont,
+            ));
+          }
         }
         cumulativeDuration += note.duration;
       }
@@ -759,8 +884,10 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     double staffHeight,
     double ls,
     ColorSchemeProvider provider,
-    pw.Font musicFont,
-  ) {
+    pw.Font musicFont, {
+    bool? forcedStemUp,
+    bool noFlags = false,
+  }) {
     final widgets = <pw.Widget>[];
 
     // Calculate staff position
@@ -860,7 +987,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
     // Stem
     if (note.type != 'whole') {
-      final stemUp = pos < 5;
+      final stemUp = forcedStemUp ?? (pos < 5);
       final stemLength = ls * 3.4;
       
       widgets.add(
@@ -876,34 +1003,57 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
       );
 
       // Flags for shorter notes (eighth, 16th, etc.)
-      final flagCount = switch (note.type) {
-        'eighth' => 1,
-        '16th' => 2,
-        '32nd' => 3,
-        _ => 0,
-      };
+      if (!noFlags) {
+        final flagCount = switch (note.type) {
+          'eighth' => 1,
+          '16th' => 2,
+          '32nd' => 3,
+          _ => 0,
+        };
 
-      if (flagCount > 0) {
-        for (int i = 0; i < flagCount; i++) {
-          final flagShift = stemUp ? i * ls * 0.75 : -i * ls * 0.75;
+        if (flagCount > 0) {
+          // Tip of the stem where flags attach
           final tipY = stemUp ? y - stemLength : y + stemLength;
-          final flagY = tipY + flagShift;
           final flagX = stemUp ? x + noteHeadWidth / 2 - 0.6 : x - noteHeadWidth / 2 - 0.6;
 
-          widgets.add(
-            pw.Positioned(
-              left: flagX,
-              top: flagY - (stemUp ? 0 : ls * 1.5),
-              child: pw.Text(
-                stemUp ? '\u{E240}' : '\u{E241}', 
-                style: pw.TextStyle(
-                  font: musicFont,
-                  fontSize: ls * 3,
-                  color: pdfColor,
+          for (int i = 0; i < flagCount; i++) {
+            // Space between flags
+            final flagShift = stemUp ? i * ls * 0.75 : -i * ls * 0.75;
+            final currentFlagY = tipY + flagShift;
+
+            widgets.add(
+              pw.Positioned(
+                left: 0,
+                top: 0,
+                child: pw.CustomPaint(
+                  size: const PdfPoint(0, 0),
+                  painter: (PdfGraphics canvas, PdfPoint size) {
+                    canvas.setStrokeColor(pdfColor);
+                    canvas.setLineWidth(1.0);
+                    
+                    // Use absolute coordinates within the row stack.
+                    // PDF graphics Y increases upwards, so we negate currentFlagY.
+                    final startX = flagX;
+                    final startY = -currentFlagY;
+                    
+                    // Curve AWAY from the stem tip
+                    // Stem UP: Flag curves DOWN (Y decreases in page view, so more negative in PDF)
+                    // Stem DOWN: Flag curves UP (Y increases in page view, so less negative in PDF)
+                    final ey = stemUp ? -ls * 1.3 : ls * 1.3;
+                    final cpY = stemUp ? -ls * 0.5 : ls * 0.5;
+                    
+                    canvas.moveTo(startX, startY);
+                    canvas.curveTo(
+                      startX + ls * 0.8, startY + cpY, 
+                      startX + ls * 0.5, startY + ey, 
+                      startX + ls * 0.5, startY + ey
+                    );
+                    canvas.strokePath();
+                  },
                 ),
               ),
-            ),
-          );
+            );
+          }
         }
       }
     }
