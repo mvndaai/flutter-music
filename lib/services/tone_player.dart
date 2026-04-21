@@ -19,20 +19,20 @@ class TonePlayer {
   }
 
   /// Starts the metronome at the given tempo (BPM).
-  void startMetronome(double bpm, {void Function()? onBeat}) {
+  void startMetronome(double bpm, {String sound = 'tick', void Function()? onBeat}) {
     stopMetronome();
 
     final intervalMs = (60000.0 / bpm).round();
     _isMetronomeRunning = true;
 
     // Play click immediately
-    _playMetronomeClick();
+    _playMetronomeClick(sound);
     onBeat?.call();
 
     _metronomeTimer = Timer.periodic(
       Duration(milliseconds: intervalMs),
       (_) {
-        _playMetronomeClick();
+        _playMetronomeClick(sound);
         onBeat?.call();
       },
     );
@@ -46,8 +46,13 @@ class TonePlayer {
   }
 
   /// Plays a metronome click sound.
-  Future<void> _playMetronomeClick() async {
-    await _platformPlayer.playTone(1000.0, 100);
+  Future<void> _playMetronomeClick(String sound) async {
+    if (sound == 'beep') {
+      await _platformPlayer.playTone(1000.0, 100);
+    } else {
+      // Default 'tick' - shorter and higher pitch for a "tick" sound
+      await _platformPlayer.playTone(2000.0, 20);
+    }
   }
 
   /// Disposes of resources.

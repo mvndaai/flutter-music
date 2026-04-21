@@ -16,6 +16,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   static const String _coloredLabelsKey = 'settings_colored_labels';
   static const String _measuresPerRowKey = 'settings_measures_per_row';
   static const String _themeModeKey = 'app_theme_mode';
+  static const String _metronomeSoundKey = 'settings_metronome_sound';
 
   final Uuid _uuid = const Uuid();
 
@@ -30,6 +31,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   bool _coloredLabels = false;
   int _measuresPerRow = 4;
   ThemeMode _themeMode = ThemeMode.system;
+  String _metronomeSound = 'tick';
 
   bool get showNoteLabels => _showNoteLabels;
   bool get showLetter => _showLetter;
@@ -39,6 +41,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   int get measuresPerRow => _measuresPerRow;
   String get activeId => _activeId;
   ThemeMode get themeMode => _themeMode;
+  String get metronomeSound => _metronomeSound;
 
   List<InstrumentColorScheme> get allSchemes => [
         ..._builtInSchemes,
@@ -64,6 +67,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     _labelsBelow = prefs.getBool(_labelsBelowKey) ?? true;
     _coloredLabels = prefs.getBool(_coloredLabelsKey) ?? false;
     _measuresPerRow = prefs.getInt(_measuresPerRowKey) ?? 4;
+    _metronomeSound = prefs.getString(_metronomeSoundKey) ?? 'tick';
 
     final themeModeStr = prefs.getString(_themeModeKey) ?? 'system';
     _themeMode = switch (themeModeStr) {
@@ -201,6 +205,14 @@ class ColorSchemeProvider extends ChangeNotifier {
       ThemeMode.system => 'system',
     };
     await prefs.setString(_themeModeKey, modeStr);
+  }
+
+  Future<void> setMetronomeSound(String sound) async {
+    if (_metronomeSound == sound) return;
+    _metronomeSound = sound;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_metronomeSoundKey, sound);
   }
 
   Future<InstrumentColorScheme> createCustom({String? name, String? icon}) async {

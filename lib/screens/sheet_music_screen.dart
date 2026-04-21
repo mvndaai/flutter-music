@@ -47,7 +47,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     if (_tonePlayer.isMetronomeRunning) {
       _tonePlayer.stopMetronome();
     } else {
-      _tonePlayer.startMetronome(_tempo);
+      final provider = context.read<ColorSchemeProvider>();
+      _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
     }
     if (mounted) {
       setState(() {});
@@ -246,7 +247,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                         setState(() => _tempo = v);
                         // Restart metronome if running
                         if (_tonePlayer.isMetronomeRunning) {
-                          _tonePlayer.startMetronome(_tempo);
+                          final provider = context.read<ColorSchemeProvider>();
+                          _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
                         }
                       },
                     ),
@@ -254,7 +256,35 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
                   const Divider(height: 24),
 
-                  // Measures per row
+                  // Metronome Sound
+                  ListTile(
+                    title: const Text('Metronome Sound'),
+                    trailing: DropdownButton<String>(
+                      value: provider.metronomeSound,
+                      underline: const SizedBox.shrink(),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'tick',
+                          child: Text('Tick'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'beep',
+                          child: Text('Beep'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          provider.setMetronomeSound(v);
+                          // Restart metronome if running to apply change
+                          if (_tonePlayer.isMetronomeRunning) {
+                            _tonePlayer.startMetronome(_tempo, sound: v);
+                          }
+                        }
+                      },
+                    ),
+                  ),
+
+                  const Divider(height: 24),
                   ListTile(
                     title: const Text('Measures per row'),
                     trailing: DropdownButton<int>(
