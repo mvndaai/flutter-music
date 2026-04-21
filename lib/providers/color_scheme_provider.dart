@@ -218,12 +218,13 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setString(_metronomeSoundKey, sound);
   }
 
-  Future<InstrumentColorScheme> createCustom({String? name, String? icon}) async {
+  Future<InstrumentColorScheme> createCustom({String? name, String? icon, String? emoji}) async {
     final base = activeScheme;
     final scheme = InstrumentColorScheme(
       id: _uuid.v7(),
       name: name ?? 'Custom ${_customSchemes.length + 1}',
       icon: icon,
+      emoji: emoji,
       colors: Map.from(base.colors),
       octaveOverrides: Map.from(base.octaveOverrides),
     );

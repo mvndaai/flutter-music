@@ -20,6 +20,7 @@ class InstrumentColorScheme {
   final String id;
   final String name;
   final String? icon;
+  final String? emoji;
 
   /// Whether this is a built-in (non-deletable) scheme.
   final bool isBuiltIn;
@@ -44,6 +45,7 @@ class InstrumentColorScheme {
     required this.id,
     required this.name,
     this.icon,
+    this.emoji,
     required this.colors,
     this.isBuiltIn = false,
     this.isImported = false,
@@ -109,6 +111,7 @@ class InstrumentColorScheme {
     String? id,
     String? name,
     String? icon,
+    String? emoji,
     Map<String, Color>? colors,
     Map<String, Color>? octaveOverrides,
     Set<String>? disabledKeys,
@@ -120,6 +123,7 @@ class InstrumentColorScheme {
       id: id ?? this.id,
       name: name ?? this.name,
       icon: icon ?? this.icon,
+      emoji: emoji ?? this.emoji,
       colors: colors ?? Map.from(this.colors),
       isBuiltIn: isBuiltIn ?? this.isBuiltIn,
       isImported: isImported ?? this.isImported,
@@ -133,6 +137,7 @@ class InstrumentColorScheme {
         'id': id,
         'name': name,
         if (icon != null) 'icon': icon,
+        if (emoji != null) 'emoji': emoji,
         'isBuiltIn': isBuiltIn,
         if (isImported) 'isImported': isImported,
         'colors': colors.map((k, v) => MapEntry(k, v.toARGB32())),
@@ -153,6 +158,7 @@ class InstrumentColorScheme {
       id: (json['id'] as String?) ?? fallbackId ?? const Uuid().v7(),
       name: json['name'] as String,
       icon: json['icon'] as String?,
+      emoji: json['emoji'] as String?,
       isBuiltIn: json['isBuiltIn'] as bool? ?? false,
       isImported: json['isImported'] as bool? ?? false,
       colors: rawColors.map((k, v) => MapEntry(k, Color(v as int))),
@@ -166,6 +172,7 @@ class InstrumentColorScheme {
   static const InstrumentColorScheme black = InstrumentColorScheme(
     id: 'builtin_black',
     name: 'Standard',
+    emoji: '🎹',
     isBuiltIn: true,
     colors: {},
   );

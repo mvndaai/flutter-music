@@ -99,13 +99,15 @@ class ColorSchemesScreen extends StatelessWidget {
 
   Future<void> _createNew(BuildContext context) async {
     final provider = context.read<ColorSchemeProvider>();
-    final result = await _promptNameAndIcon(context, initialName: '', initialIcon: '');
+    final result = await _promptNameIconEmoji(context, initialName: '', initialIcon: '', initialEmoji: '🎹');
     if (result == null) return;
     final name = result['name'] ?? '';
     final icon = result['icon'] ?? '';
+    final emoji = result['emoji'] ?? '';
     final scheme = await provider.createCustom(
       name: name.trim(),
       icon: icon.trim(),
+      emoji: emoji.trim(),
     );
     if (context.mounted) {
       await _openEditor(context, scheme, provider);
@@ -151,16 +153,18 @@ class ColorSchemesScreen extends StatelessWidget {
     if (ok == true) await provider.deleteCustom(scheme.id);
   }
 
-  Future<Map<String, String>?> _promptNameAndIcon(
+  Future<Map<String, String>?> _promptNameIconEmoji(
     BuildContext context, {
     required String initialName,
     required String initialIcon,
+    required String initialEmoji,
   }) {
     return showDialog<Map<String, String>>(
       context: context,
-      builder: (_) => _NameIconDialog(
+      builder: (_) => _NameIconEmojiDialog(
         initialName: initialName,
         initialIcon: initialIcon,
+        initialEmoji: initialEmoji,
       ),
     );
   }
@@ -210,9 +214,7 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
                     itemBuilder: (context, index) {
                       final scheme = filtered[index];
                       return ListTile(
-                        leading: scheme.icon != null && scheme.icon!.isNotEmpty
-                            ? Image.network(scheme.icon!, width: 32, errorBuilder: (_, __, ___) => const Icon(Icons.music_note))
-                            : const Icon(Icons.music_note),
+                        leading: _InstrumentIcon(scheme: scheme, size: 32),
                         title: Text(scheme.name),
                         trailing: ElevatedButton(
                           onPressed: () async {
@@ -236,22 +238,61 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
   }
 }
 
-// ── Name & Icon dialog ───────────────────────────────────────────────────
-
-class _NameIconDialog extends StatefulWidget {
-  final String initialName;
-  final String? initialIcon;
-  const _NameIconDialog({required this.initialName, this.initialIcon});
+class _InstrumentIcon extends StatelessWidget {
+  final InstrumentColorScheme scheme;
+  final double size;
+  const _InstrumentIcon({required this.scheme, this.size = 32});
 
   @override
-  State<_NameIconDialog> createState() => _NameIconDialogState();
+  Widget build(BuildContext context) {
+    if (scheme.emoji != null && scheme.emoji!.isNotEmpty) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Text(
+            scheme.emoji!,
+            style: TextStyle(fontSize: size * 0.8),
+          ),
+        ),
+      );
+    }
+
+    if (scheme.icon != null && scheme.icon!.isNotEmpty) {
+      return Image.network(
+        scheme.icon!,
+        width: size,
+        height: size,
+        errorBuilder: (_, __, ___) => Icon(Icons.music_note, size: size),
+      );
+    }
+
+    return Icon(Icons.music_note, size: size);
+  }
 }
 
-class _NameIconDialogState extends State<_NameIconDialog> {
+// ── Name, Icon & Emoji dialog ───────────────────────────────────────────
+
+class _NameIconEmojiDialog extends StatefulWidget {
+  final String initialName;
+  final String? initialIcon;
+  final String? initialEmoji;
+  const _NameIconEmojiDialog({
+    required this.initialName,
+    this.initialIcon,
+    this.initialEmoji,
+  });
+
+  @override
+  State<_NameIconEmojiDialog> createState() => _NameIconEmojiDialogState();
+}
+
+class _NameIconEmojiDialogState extends State<_NameIconEmojiDialog> {
   late final TextEditingController _nameController =
       TextEditingController(text: widget.initialName);
   late final TextEditingController _iconController =
       TextEditingController(text: widget.initialIcon);
+  late String _selectedEmoji = widget.initialEmoji ?? '🎹';
 
   @override
   void dispose() {
@@ -264,28 +305,79 @@ class _NameIconDialogState extends State<_NameIconDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Instrument info'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'e.g. My Blue Xylophone',
-              border: OutlineInputBorder(),
+      content: SizedBox(
+        width: 320, // Explicit width for the dialog content
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'e.g. My Blue Xylophone',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _iconController,
-            decoration: const InputDecoration(
-              labelText: 'Icon URL (optional)',
-              hintText: 'https://...',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 16),
+            const Text('Choose an Emoji:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              height: 190, // Approx 3.5 rows
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: MusicConstants.instrumentEmojis.map((emoji) {
+                      final isSelected = _selectedEmoji == emoji;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedEmoji = emoji),
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : null,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(emoji,
+                                style: const TextStyle(fontSize: 24)),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _iconController,
+              decoration: const InputDecoration(
+                labelText: 'Icon URL (fallback)',
+                hintText: 'https://...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -296,6 +388,7 @@ class _NameIconDialogState extends State<_NameIconDialog> {
           onPressed: () => Navigator.pop(context, {
             'name': _nameController.text,
             'icon': _iconController.text,
+            'emoji': _selectedEmoji,
           }),
           child: const Text('OK'),
         ),
@@ -341,21 +434,8 @@ class _SchemeCard extends StatelessWidget {
                 color: isActive ? Theme.of(context).colorScheme.primary : null,
               ),
               const SizedBox(width: 8),
-              if (scheme.icon != null && scheme.icon!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Image.network(
-                    scheme.icon!,
-                    width: 32,
-                    height: 32,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.music_note, size: 32),
-                  ),
-                )
-              else
-                const Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(Icons.music_note, size: 32),
-                ),
+              _InstrumentIcon(scheme: scheme, size: 32),
+              const SizedBox(width: 12),
               // Color swatch row
               Expanded(
                 child: Column(
@@ -471,6 +551,7 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
   late Map<String, String> _tuningOverrides;
   late String _name;
   late String? _icon;
+  late String? _emoji;
   bool _dirty = false;
 
   @override
@@ -482,12 +563,14 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
     _tuningOverrides = Map.from(widget.scheme.tuningOverrides);
     _name = widget.scheme.name;
     _icon = widget.scheme.icon;
+    _emoji = widget.scheme.emoji;
   }
 
   Future<void> _save() async {
     final updated = widget.scheme.copyWith(
       name: _name,
       icon: _icon,
+      emoji: _emoji,
       colors: _colors,
       octaveOverrides: _octaveOverrides,
       disabledKeys: _disabledKeys,
@@ -505,17 +588,20 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
   Future<void> _editInfo() async {
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (_) => _NameIconDialog(
+      builder: (_) => _NameIconEmojiDialog(
         initialName: _name,
         initialIcon: _icon ?? '',
+        initialEmoji: _emoji ?? '🎹',
       ),
     );
     if (result != null) {
       final name = result['name'] ?? '';
       final icon = result['icon'] ?? '';
+      final emoji = result['emoji'] ?? '';
       setState(() {
         _name = name.trim();
         _icon = icon.trim();
+        _emoji = emoji.trim();
         _dirty = true;
       });
     }
@@ -692,6 +778,7 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
     final currentScheme = widget.scheme.copyWith(
       name: _name,
       icon: _icon,
+      emoji: _emoji,
       colors: _colors,
       octaveOverrides: _octaveOverrides,
     );
@@ -709,7 +796,13 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_name),
+        title: Row(
+          children: [
+            _InstrumentIcon(scheme: currentScheme, size: 28),
+            const SizedBox(width: 12),
+            Expanded(child: Text(_name)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),

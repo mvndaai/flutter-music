@@ -76,4 +76,9 @@ class MusicConstants {
     final alter = acc == '#' ? 1 : acc == 'b' ? -1 : 0;
     return 12 * (octave + 1) + base + alter;
   }
+
+  /// List of instrument emojis.
+  static const List<String> instrumentEmojis = [
+    '🎹', '🎸', '🎻', '🎷', '🎺', '🪕', '🥁', '🪘', '🪗', '🪈', '📯', '🔔', '🎵', '🎶', '🎼', '🎤', '🎧', '📻', '🎙️', '🎚️', '🎛️', '🔊', '🔉', '🔈', '🔇', '📣', '📢', '🔕', '🌈', '✨', '⭐', '🌟'
+  ];
 }

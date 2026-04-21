@@ -2,12 +2,14 @@
   {
     "id": "builtin_black",
     "name": "Standard",
+    "emoji": "🎹",
     "isBuiltIn": true,
     "colors": {}
   },
   {
     "id": "builtin_rainbow",
     "name": "Rainbow",
+    "emoji": "🌈",
     "icon": "https://img.icons8.com/color/96/rainbow.png",
     "isBuiltIn": true,
     "colors": {

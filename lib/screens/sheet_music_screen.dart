@@ -38,7 +38,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
   
   @override
   void dispose() {
-    _stopPlayback();
+    _stopPlayback(isDisposing: true);
     _tonePlayer.dispose();
     super.dispose();
   }
@@ -90,20 +90,15 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     }
   }
   
-  void _stopPlayback() {
+  void _stopPlayback({bool isDisposing = false}) {
     _playbackTimer?.cancel();
     _playbackTimer = null;
+    _isPlaying = false;
+    _activeNoteIndex = -1;
+    _currentNoteIndexInPlayback = 0;
+    if (isDisposing) return;
     if (mounted) {
-      setState(() {
-        _isPlaying = false;
-        _activeNoteIndex = -1;
-        _currentNoteIndexInPlayback = 0;
-      });
-    } else {
-      // Widget is being disposed, just update the state without setState
-      _isPlaying = false;
-      _activeNoteIndex = -1;
-      _currentNoteIndexInPlayback = 0;
+      setState(() {});
     }
   }
   
@@ -457,19 +452,40 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
                       return pw.Padding(
                         padding: const pw.EdgeInsets.only(bottom: 16),
-                        child: _buildStaffRow(
-                          rowMeasures,
-                          provider,
-                          pageWidth,
-                          lineSpacing,
-                          topMargin,
-                          staffHeight,
-                          clefWidth,
-                          timeSigWidth,
-                          isFirstRow,
-                          isLastRow,
-                          totalSongDuration,
-                          musicFont,
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Row(
+                              children: [
+                                pw.Text(
+                                  'Instrument: ${provider.activeScheme.name} ',
+                                  style: pw.TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: pw.FontWeight.bold),
+                                ),
+                                if (provider.activeScheme.emoji != null)
+                                  pw.Text(
+                                    provider.activeScheme.emoji!,
+                                    style: const pw.TextStyle(fontSize: 10),
+                                  ),
+                              ],
+                            ),
+                            pw.SizedBox(height: 4),
+                            _buildStaffRow(
+                              rowMeasures,
+                              provider,
+                              pageWidth,
+                              lineSpacing,
+                              topMargin,
+                              staffHeight,
+                              clefWidth,
+                              timeSigWidth,
+                              isFirstRow,
+                              isLastRow,
+                              totalSongDuration,
+                              musicFont,
+                            ),
+                          ],
                         ),
                       );
                     }),
