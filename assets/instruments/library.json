@@ -1,9 +1,7 @@
 [
   {
-    "id": "builtin_xylophone_little_tykes_1980s",
     "name": "Xylophone: Little Tikes 1980s",
     "icon": "https://img.icons8.com/fluency/96/xylophone.png",
-    "isBuiltIn": true,
     "colors": {
       "C": 4287505578,
       "D": 4280158437,

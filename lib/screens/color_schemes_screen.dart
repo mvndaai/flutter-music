@@ -2,15 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
 import '../models/instrument_color_scheme.dart';
 import '../providers/color_scheme_provider.dart';
 import '../widgets/note_color_picker.dart';
 import '../widgets/add_key_wizard.dart';
 
 /// Screen for managing instrument color schemes.
-/// Users can activate built-in or custom schemes, create new ones by copying
-/// any existing scheme, edit custom note colors, and delete custom schemes.
 class ColorSchemesScreen extends StatelessWidget {
   const ColorSchemesScreen({super.key});
 
@@ -21,9 +18,9 @@ class ColorSchemesScreen extends StatelessWidget {
         title: const Text('Instruments'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'Import from URL',
-            onPressed: () => _importFromUrl(context),
+            icon: const Icon(Icons.library_music),
+            tooltip: 'Search Library',
+            onPressed: () => _openLibrary(context),
           ),
         ],
       ),
@@ -46,7 +43,7 @@ class ColorSchemesScreen extends StatelessWidget {
                 onDelete: scheme.isBuiltIn
                     ? null
                     : () => _confirmDelete(context, scheme, provider),
-                onShare: scheme.isBuiltIn
+                onShare: (scheme.isBuiltIn || scheme.isImported)
                     ? null
                     : () => _shareScheme(context, scheme),
               );
@@ -59,6 +56,18 @@ class ColorSchemesScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('New'),
       ),
+    );
+  }
+
+  Future<void> _openLibrary(BuildContext context) async {
+    final provider = context.read<ColorSchemeProvider>();
+    final library = await provider.loadLibrary();
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _LibrarySearchSheet(library: library),
     );
   }
 
@@ -81,55 +90,6 @@ class ColorSchemesScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not open GitHub')),
         );
-      }
-    }
-  }
-
-  Future<void> _importFromUrl(BuildContext context) async {
-    final controller = TextEditingController();
-    final url = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import Instrument'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'https://.../instrument.json',
-            labelText: 'URL',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Import')),
-        ],
-      ),
-    );
-
-    if (url != null && url.isNotEmpty) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          final List<dynamic> list = jsonDecode(response.body);
-          if (context.mounted) {
-            final provider = context.read<ColorSchemeProvider>();
-            for (final item in list) {
-              final scheme = InstrumentColorScheme.fromJson(item as Map<String, dynamic>);
-              await provider.importScheme(scheme);
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Imported successfully')),
-            );
-          }
-        } else {
-          throw Exception('Failed to load instrument: ${response.statusCode}');
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to import: $e')),
-          );
-        }
       }
     }
   }
@@ -198,6 +158,76 @@ class ColorSchemesScreen extends StatelessWidget {
       builder: (_) => _NameIconDialog(
         initialName: initialName,
         initialIcon: initialIcon,
+      ),
+    );
+  }
+}
+
+class _LibrarySearchSheet extends StatefulWidget {
+  final List<InstrumentColorScheme> library;
+  const _LibrarySearchSheet({required this.library});
+
+  @override
+  State<_LibrarySearchSheet> createState() => _LibrarySearchSheetState();
+}
+
+class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = widget.library
+        .where((s) => s.name.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Instrument Library', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          TextField(
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Search by name...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => setState(() => _query = v),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 300,
+            child: filtered.isEmpty
+                ? const Center(child: Text('No instruments found'))
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final scheme = filtered[index];
+                      return ListTile(
+                        leading: scheme.icon != null && scheme.icon!.isNotEmpty
+                            ? Image.network(scheme.icon!, width: 32, errorBuilder: (_, __, ___) => const Icon(Icons.music_note))
+                            : const Icon(Icons.music_note),
+                        title: Text(scheme.name),
+                        trailing: ElevatedButton(
+                          onPressed: () async {
+                            await context.read<ColorSchemeProvider>().importScheme(scheme);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Imported ${scheme.name}')),
+                              );
+                            }
+                          },
+                          child: const Text('Import'),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

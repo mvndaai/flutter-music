@@ -6,8 +6,6 @@ import 'package:uuid/uuid.dart';
 import '../models/instrument_color_scheme.dart';
 
 /// Manages the active instrument color scheme and the global note-label setting.
-///
-/// Persists both the active scheme ID and any custom schemes to SharedPreferences.
 class ColorSchemeProvider extends ChangeNotifier {
   static const String _activeIdKey = 'color_scheme_active_id';
   static const String _customSchemesKey = 'color_scheme_custom';
@@ -25,16 +23,12 @@ class ColorSchemeProvider extends ChangeNotifier {
   List<InstrumentColorScheme> _customSchemes = [];
   List<InstrumentColorScheme> _builtInSchemes = [InstrumentColorScheme.black];
 
-  /// When false, note circles show only color – no text label at all.
   bool _showNoteLabels = true;
-
   bool _showLetter = true;
   bool _showSolfege = false;
   bool _labelsBelow = true;
   bool _coloredLabels = false;
   int _measuresPerRow = 4;
-
-  /// App theme mode: system, light, or dark
   ThemeMode _themeMode = ThemeMode.system;
 
   bool get showNoteLabels => _showNoteLabels;
@@ -57,15 +51,13 @@ class ColorSchemeProvider extends ChangeNotifier {
         orElse: () => InstrumentColorScheme.black,
       );
 
-  /// Loads persisted preferences.  Call once at startup.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    
+    // Load built-in defaults from assets/instruments/defaults.json
+    await _loadDefaults();
 
-    // Load built-in defaults from assets
-    await _loadBuiltInDefaults();
-
-    _activeId =
-        prefs.getString(_activeIdKey) ?? InstrumentColorScheme.black.id;
+    _activeId = prefs.getString(_activeIdKey) ?? InstrumentColorScheme.black.id;
     _showNoteLabels = prefs.getBool(_showLabelsKey) ?? true;
     _showLetter = prefs.getBool(_showLetterKey) ?? true;
     _showSolfege = prefs.getBool(_showSolfegeKey) ?? false;
@@ -73,7 +65,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     _coloredLabels = prefs.getBool(_coloredLabelsKey) ?? false;
     _measuresPerRow = prefs.getInt(_measuresPerRowKey) ?? 4;
 
-    // Load theme mode
     final themeModeStr = prefs.getString(_themeModeKey) ?? 'system';
     _themeMode = switch (themeModeStr) {
       'light' => ThemeMode.light,
@@ -96,34 +87,34 @@ class ColorSchemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadBuiltInDefaults() async {
+  Future<void> _loadDefaults() async {
     try {
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-      final instrumentPaths = manifestMap.keys
-          .where((String key) => key.startsWith('assets/instruments/') && key.endsWith('.json'))
-          .toList();
-
-      List<InstrumentColorScheme> loaded = [InstrumentColorScheme.black];
-      for (final path in instrumentPaths) {
-        final content = await rootBundle.loadString(path);
-        final List<dynamic> list = jsonDecode(content);
-        loaded.addAll(list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)));
+      final content = await rootBundle.loadString('assets/instruments/defaults.json');
+      final List<dynamic> list = jsonDecode(content);
+      _builtInSchemes = list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)).toList();
+      
+      // Ensure "Standard" is always there if missing from JSON
+      if (!_builtInSchemes.any((s) => s.id == InstrumentColorScheme.black.id)) {
+        _builtInSchemes.insert(0, InstrumentColorScheme.black);
       }
-
-      // Deduplicate by ID, keeping the first one found (assets should take priority or be unique)
-      final Map<String, InstrumentColorScheme> unique = {};
-      for (var s in loaded) {
-        unique.putIfAbsent(s.id, () => s);
-      }
-      _builtInSchemes = unique.values.toList();
     } catch (e) {
-      debugPrint('Error loading built-in instruments: $e');
+      debugPrint('Error loading defaults: $e');
       _builtInSchemes = [InstrumentColorScheme.black];
     }
   }
 
-  /// Returns the color for a note using the active scheme.
+  /// Loads the library for searching. This is NOT stored in the provider's main list.
+  Future<List<InstrumentColorScheme>> loadLibrary() async {
+    try {
+      final content = await rootBundle.loadString('assets/instruments/library.json');
+      final List<dynamic> list = jsonDecode(content);
+      return list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      debugPrint('Error loading library: $e');
+      return [];
+    }
+  }
+
   Color colorForNote(
     String step,
     double alter, {
@@ -139,7 +130,6 @@ class ColorSchemeProvider extends ChangeNotifier {
         brightness: brightness,
       );
 
-  /// Activates the scheme with the given [id].
   Future<void> setActive(String id) async {
     if (_activeId == id) return;
     _activeId = id;
@@ -148,7 +138,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setString(_activeIdKey, id);
   }
 
-  /// Toggles (or explicitly sets) the note-label visibility.
   Future<void> setShowNoteLabels(bool value) async {
     if (_showNoteLabels == value) return;
     _showNoteLabels = value;
@@ -201,7 +190,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setInt(_measuresPerRowKey, value);
   }
 
-  /// Sets the app theme mode.
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
     _themeMode = mode;
@@ -215,7 +203,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setString(_themeModeKey, modeStr);
   }
 
-  /// Creates a new custom scheme as a copy of the active scheme.
   Future<InstrumentColorScheme> createCustom({String? name, String? icon}) async {
     final base = activeScheme;
     final scheme = InstrumentColorScheme(
@@ -231,7 +218,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     return scheme;
   }
 
-  /// Saves changes to an existing custom scheme.
   Future<void> updateCustom(InstrumentColorScheme updated) async {
     final idx = _customSchemes.indexWhere((s) => s.id == updated.id);
     if (idx < 0) return;
@@ -240,7 +226,6 @@ class ColorSchemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Deletes a custom scheme. Switches to default if it was active.
   Future<void> deleteCustom(String id) async {
     _customSchemes.removeWhere((s) => s.id == id);
     if (_activeId == id) {
@@ -252,18 +237,18 @@ class ColorSchemeProvider extends ChangeNotifier {
 
   Future<void> _persistCustom() async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded =
-        jsonEncode(_customSchemes.map((s) => s.toJson()).toList());
+    final encoded = jsonEncode(_customSchemes.map((s) => s.toJson()).toList());
     await prefs.setString(_customSchemesKey, encoded);
   }
 
   Future<void> importScheme(InstrumentColorScheme scheme) async {
     // If it's already in custom schemes, update it; otherwise add it.
     final index = _customSchemes.indexWhere((s) => s.id == scheme.id);
+    final imported = scheme.copyWith(isImported: true, isBuiltIn: false);
     if (index >= 0) {
-      _customSchemes[index] = scheme;
+      _customSchemes[index] = imported;
     } else {
-      _customSchemes.add(scheme);
+      _customSchemes.add(imported);
     }
     await _persistCustom();
     notifyListeners();
