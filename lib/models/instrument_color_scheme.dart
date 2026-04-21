@@ -156,8 +156,9 @@ class InstrumentColorScheme {
   /// Xylophone with the traditional 8-bar diatonic palette:
   /// C=pink, D=blue, E=green, F=lime, G=yellow, A=orange, B=red.
   static const InstrumentColorScheme myXylophone = InstrumentColorScheme(
-    id: 'builtin_my_xylophone',
-    name: 'My Xylophone',
+    id: 'builtin_xylophone_little_tykes_1980s',
+    name: 'Xylophone: Little Tikes 1980s ',
+    icon: 'https://img.icons8.com/fluency/96/xylophone.png',
     isBuiltIn: true,
     colors: {
       'C': Color(0xFFE91E63),  // pink
@@ -175,31 +176,11 @@ class InstrumentColorScheme {
     },
   );
 
-  /// Default xylophone palette (red → orange → yellow → green → teal → blue → purple).
-  static const InstrumentColorScheme defaultXylophone = InstrumentColorScheme(
-    id: 'builtin_default',
-    name: 'Default Xylophone',
-    isBuiltIn: true,
-    colors: {
-      'C': Color(0xFFE53935),
-      'C#': Color(0xFFD81B60),
-      'D': Color(0xFFF57C00),
-      'D#': Color(0xFFE65100),
-      'E': Color(0xFFFDD835),
-      'F': Color(0xFF43A047),
-      'F#': Color(0xFF2E7D32),
-      'G': Color(0xFF00ACC1),
-      'G#': Color(0xFF00695C),
-      'A': Color(0xFF1E88E5),
-      'A#': Color(0xFF1565C0),
-      'B': Color(0xFF8E24AA),
-    },
-  );
-
   /// Smooth rainbow gradient across all 12 chromatic steps.
   static const InstrumentColorScheme rainbow = InstrumentColorScheme(
     id: 'builtin_rainbow',
     name: 'Rainbow',
+    icon: 'https://img.icons8.com/color/96/rainbow.png',
     isBuiltIn: true,
     colors: {
       'C': Color(0xFFFF1744),
@@ -221,6 +202,7 @@ class InstrumentColorScheme {
   static const InstrumentColorScheme pastel = InstrumentColorScheme(
     id: 'builtin_pastel',
     name: 'Pastel',
+    icon: 'https://img.icons8.com/color/96/palette.png',
     isBuiltIn: true,
     colors: {
       'C': Color(0xFFFF9AA2),
@@ -235,27 +217,6 @@ class InstrumentColorScheme {
       'A': Color(0xFFF9D0C4),
       'A#': Color(0xFFD4F0F0),
       'B': Color(0xFFE8D5C4),
-    },
-  );
-
-  /// Greyscale – useful for monochrome printing.
-  static const InstrumentColorScheme monochrome = InstrumentColorScheme(
-    id: 'builtin_mono',
-    name: 'Monochrome',
-    isBuiltIn: true,
-    colors: {
-      'C': Color(0xFF212121),
-      'C#': Color(0xFF424242),
-      'D': Color(0xFF616161),
-      'D#': Color(0xFF757575),
-      'E': Color(0xFF9E9E9E),
-      'F': Color(0xFFBDBDBD),
-      'F#': Color(0xFFE0E0E0),
-      'G': Color(0xFF757575),
-      'G#': Color(0xFF616161),
-      'A': Color(0xFF424242),
-      'A#': Color(0xFF212121),
-      'B': Color(0xFF9E9E9E),
     },
   );
 
