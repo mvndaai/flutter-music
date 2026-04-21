@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/instrument_color_scheme.dart';
@@ -22,6 +23,7 @@ class ColorSchemeProvider extends ChangeNotifier {
 
   String _activeId = InstrumentColorScheme.black.id;
   List<InstrumentColorScheme> _customSchemes = [];
+  List<InstrumentColorScheme> _builtInSchemes = [InstrumentColorScheme.black];
 
   /// When false, note circles show only color – no text label at all.
   bool _showNoteLabels = true;
@@ -45,7 +47,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   List<InstrumentColorScheme> get allSchemes => [
-        ...InstrumentColorScheme.builtIns,
+        ..._builtInSchemes,
         ..._customSchemes,
       ];
 
@@ -58,6 +60,10 @@ class ColorSchemeProvider extends ChangeNotifier {
   /// Loads persisted preferences.  Call once at startup.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Load built-in defaults from assets
+    await _loadBuiltInDefaults();
+
     _activeId =
         prefs.getString(_activeIdKey) ?? InstrumentColorScheme.black.id;
     _showNoteLabels = prefs.getBool(_showLabelsKey) ?? true;
@@ -88,6 +94,33 @@ class ColorSchemeProvider extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  Future<void> _loadBuiltInDefaults() async {
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      final instrumentPaths = manifestMap.keys
+          .where((String key) => key.startsWith('assets/instruments/') && key.endsWith('.json'))
+          .toList();
+
+      List<InstrumentColorScheme> loaded = [InstrumentColorScheme.black];
+      for (final path in instrumentPaths) {
+        final content = await rootBundle.loadString(path);
+        final List<dynamic> list = jsonDecode(content);
+        loaded.addAll(list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)));
+      }
+
+      // Deduplicate by ID, keeping the first one found (assets should take priority or be unique)
+      final Map<String, InstrumentColorScheme> unique = {};
+      for (var s in loaded) {
+        unique.putIfAbsent(s.id, () => s);
+      }
+      _builtInSchemes = unique.values.toList();
+    } catch (e) {
+      debugPrint('Error loading built-in instruments: $e');
+      _builtInSchemes = [InstrumentColorScheme.black];
+    }
   }
 
   /// Returns the color for a note using the active scheme.
@@ -222,5 +255,17 @@ class ColorSchemeProvider extends ChangeNotifier {
     final encoded =
         jsonEncode(_customSchemes.map((s) => s.toJson()).toList());
     await prefs.setString(_customSchemesKey, encoded);
+  }
+
+  Future<void> importScheme(InstrumentColorScheme scheme) async {
+    // If it's already in custom schemes, update it; otherwise add it.
+    final index = _customSchemes.indexWhere((s) => s.id == scheme.id);
+    if (index >= 0) {
+      _customSchemes[index] = scheme;
+    } else {
+      _customSchemes.add(scheme);
+    }
+    await _persistCustom();
+    notifyListeners();
   }
 }

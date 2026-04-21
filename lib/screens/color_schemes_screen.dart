@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 import '../models/instrument_color_scheme.dart';
 import '../providers/color_scheme_provider.dart';
 import '../widgets/note_color_picker.dart';
@@ -16,6 +19,13 @@ class ColorSchemesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Instruments'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Import from URL',
+            onPressed: () => _importFromUrl(context),
+          ),
+        ],
       ),
       body: Consumer<ColorSchemeProvider>(
         builder: (context, provider, _) {
@@ -36,6 +46,9 @@ class ColorSchemesScreen extends StatelessWidget {
                 onDelete: scheme.isBuiltIn
                     ? null
                     : () => _confirmDelete(context, scheme, provider),
+                onShare: scheme.isBuiltIn
+                    ? null
+                    : () => _shareScheme(context, scheme),
               );
             },
           );
@@ -47,6 +60,78 @@ class ColorSchemesScreen extends StatelessWidget {
         label: const Text('New'),
       ),
     );
+  }
+
+  Future<void> _shareScheme(BuildContext context, InstrumentColorScheme scheme) async {
+    final json = jsonEncode(scheme.toJson());
+    final title = 'New Instrument: ${scheme.name}';
+    final body = 'Please add this instrument to the built-in library.\n\n```json\n$json\n```';
+
+    final url = Uri.parse(
+      'https://github.com/mvndaai/flutter-music/issues/new'
+      '?title=${Uri.encodeComponent(title)}'
+      '&body=${Uri.encodeComponent(body)}'
+      '&labels=new-instrument',
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open GitHub')),
+        );
+      }
+    }
+  }
+
+  Future<void> _importFromUrl(BuildContext context) async {
+    final controller = TextEditingController();
+    final url = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import Instrument'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'https://.../instrument.json',
+            labelText: 'URL',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Import')),
+        ],
+      ),
+    );
+
+    if (url != null && url.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final List<dynamic> list = jsonDecode(response.body);
+          if (context.mounted) {
+            final provider = context.read<ColorSchemeProvider>();
+            for (final item in list) {
+              final scheme = InstrumentColorScheme.fromJson(item as Map<String, dynamic>);
+              await provider.importScheme(scheme);
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Imported successfully')),
+            );
+          }
+        } else {
+          throw Exception('Failed to load instrument: ${response.statusCode}');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to import: $e')),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _createNew(BuildContext context) async {
@@ -194,6 +279,7 @@ class _SchemeCard extends StatelessWidget {
   final VoidCallback onActivate;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onShare;
 
   const _SchemeCard({
     required this.scheme,
@@ -201,6 +287,7 @@ class _SchemeCard extends StatelessWidget {
     required this.onActivate,
     this.onEdit,
     this.onDelete,
+    this.onShare,
   });
 
   @override
@@ -254,16 +341,20 @@ class _SchemeCard extends StatelessWidget {
                 ),
               ),
               // Actions
-              if (onEdit != null || onDelete != null)
+              if (onEdit != null || onDelete != null || onShare != null)
                 PopupMenuButton<String>(
                   onSelected: (v) {
                     if (v == 'edit') onEdit?.call();
                     if (v == 'delete') onDelete?.call();
+                    if (v == 'share') onShare?.call();
                   },
                   itemBuilder: (_) => [
                     if (onEdit != null)
                       const PopupMenuItem(
                           value: 'edit', child: Text('Edit')),
+                    if (onShare != null)
+                      const PopupMenuItem(
+                          value: 'share', child: Text('Share (Submit to Library)')),
                     if (onDelete != null)
                       const PopupMenuItem(
                           value: 'delete', child: Text('Delete')),

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "builtin_black",
+    "name": "Standard",
+    "isBuiltIn": true,
+    "colors": {}
+  },
+  {
+    "id": "builtin_rainbow",
+    "name": "Rainbow",
+    "icon": "https://img.icons8.com/color/96/rainbow.png",
+    "isBuiltIn": true,
+    "colors": {
+      "C": 4294907716,
+      "C#": 4294937856,
+      "D": 4294953728,
+      "D#": 4294961664,
+      "E": 4285988611,
+      "F": 4278314614,
+      "F#": 4279659958,
+      "G": 4278235391,
+      "G#": 4280908287,
+      "A": 4284817407,
+      "A#": 4292157689,
+      "B": 4294907716
+    }
+  }
+]

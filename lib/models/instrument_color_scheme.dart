@@ -130,7 +130,7 @@ class InstrumentColorScheme {
       };
 
   factory InstrumentColorScheme.fromJson(Map<String, dynamic> json) {
-    final raw = json['colors'] as Map<String, dynamic>;
+    final raw = json['colors'] as Map<String, dynamic>? ?? {};
     final rawOverrides =
         json['octaveOverrides'] as Map<String, dynamic>? ?? {};
     return InstrumentColorScheme(
@@ -143,7 +143,7 @@ class InstrumentColorScheme {
     );
   }
 
-  // ── Built-in schemes ──────────────────────────────────────────────────────
+  // ── Built-in default ──────────────────────────────────────────────────────
 
   /// Standard scheme that follows the theme (black in light mode, white in dark).
   static const InstrumentColorScheme black = InstrumentColorScheme(
@@ -152,54 +152,4 @@ class InstrumentColorScheme {
     isBuiltIn: true,
     colors: {}, // Empty map triggers theme-aware fallback in colorForNote
   );
-
-  /// Xylophone with the traditional 8-bar diatonic palette:
-  /// C=purple, D=blue, E=green, F=lime green, G=yellow, A=orange, B=red, C(high)=pink.
-  static const InstrumentColorScheme ltXylophone1980s = InstrumentColorScheme(
-    id: 'builtin_xylophone_little_tykes_1980s',
-    name: 'Xylophone: Little Tikes 1980s ',
-    icon: 'https://img.icons8.com/fluency/96/xylophone.png',
-    isBuiltIn: true,
-    colors: {
-      'C': Color(0xFF8E24AA),  // purple
-      'D': Color(0xFF1E88E5),  // blue
-      'E': Color(0xFF43A047),  // green
-      'F': Color(0xFF8BC34A),  // lime green
-      'G': Color(0xFFFDD835),  // yellow
-      'A': Color(0xFFF57C00),  // orange
-      'B': Color(0xFFE53935),  // red
-    },
-    octaveOverrides: {
-      'C5': Color(0xFFE91E63), // pink (high C)
-    },
-  );
-
-  /// Smooth rainbow gradient across all 12 chromatic steps.
-  static const InstrumentColorScheme rainbow = InstrumentColorScheme(
-    id: 'builtin_rainbow',
-    name: 'Rainbow',
-    icon: 'https://img.icons8.com/color/96/rainbow.png',
-    isBuiltIn: true,
-    colors: {
-      'C': Color(0xFFFF1744),
-      'C#': Color(0xFFFF6D00),
-      'D': Color(0xFFFFAB00),
-      'D#': Color(0xFFFFEA00),
-      'E': Color(0xFF76FF03),
-      'F': Color(0xFF00E676),
-      'F#': Color(0xFF1DE9B6),
-      'G': Color(0xFF00B0FF),
-      'G#': Color(0xFF2979FF),
-      'A': Color(0xFF651FFF),
-      'A#': Color(0xFFD500F9),
-      'B': Color(0xFFFF1744),
-    },
-  );
-
-
-  static const List<InstrumentColorScheme> builtIns = [
-    black,
-    rainbow,
-    ltXylophone1980s,
-  ];
 }
