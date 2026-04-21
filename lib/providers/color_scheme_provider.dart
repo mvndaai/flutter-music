@@ -20,7 +20,7 @@ class ColorSchemeProvider extends ChangeNotifier {
 
   final Uuid _uuid = const Uuid();
 
-  String _activeId = InstrumentColorScheme.black.id;
+  String _activeId = 'builtin_rainbow'; // Default to rainbow on first install
   List<InstrumentColorScheme> _customSchemes = [];
   List<InstrumentColorScheme> _builtInSchemes = [InstrumentColorScheme.black];
 
@@ -51,7 +51,10 @@ class ColorSchemeProvider extends ChangeNotifier {
   InstrumentColorScheme get activeScheme =>
       allSchemes.firstWhere(
         (s) => s.id == _activeId,
-        orElse: () => InstrumentColorScheme.black,
+        orElse: () => allSchemes.firstWhere(
+          (s) => s.id == 'builtin_rainbow',
+          orElse: () => InstrumentColorScheme.black,
+        ),
       );
 
   Future<void> load() async {
@@ -60,7 +63,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     // Load built-in defaults from assets/instruments/defaults.json
     await _loadDefaults();
 
-    _activeId = prefs.getString(_activeIdKey) ?? InstrumentColorScheme.black.id;
+    _activeId = prefs.getString(_activeIdKey) ?? 'builtin_rainbow';
     _showNoteLabels = prefs.getBool(_showLabelsKey) ?? true;
     _showLetter = prefs.getBool(_showLetterKey) ?? true;
     _showSolfege = prefs.getBool(_showSolfegeKey) ?? false;
@@ -241,7 +244,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   Future<void> deleteCustom(String id) async {
     _customSchemes.removeWhere((s) => s.id == id);
     if (_activeId == id) {
-      _activeId = InstrumentColorScheme.black.id;
+      _activeId = 'builtin_rainbow';
     }
     await _persistCustom();
     notifyListeners();

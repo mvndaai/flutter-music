@@ -50,6 +50,9 @@ dependencies:
   pdf: ^3.12.0
   printing: ^5.14.3
 
+  # Google Fonts for music notation
+  google_fonts: ^6.2.1
+
   # Icons
   cupertino_icons: ^1.0.8
   web: ^1.1.1

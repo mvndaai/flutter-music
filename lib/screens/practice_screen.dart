@@ -87,11 +87,57 @@ class _PracticeScreenState extends State<PracticeScreen>
     // Apply tuning override: if this instrument has a mapping for the expected note,
     // listen for the mapped note instead.
     final activeScheme = context.read<ColorSchemeProvider>().activeScheme;
-    final targetNoteName = activeScheme.tuningOverrides[current.letterName] ?? current.letterName;
+    final specificNote = current.letterName; // e.g. "C5"
+
+    // Resolve target note name with enharmonic and octave-fallback support
+    String resolveTarget() {
+      // 1. Exact match
+      if (activeScheme.tuningOverrides.containsKey(specificNote)) {
+        return activeScheme.tuningOverrides[specificNote]!;
+      }
+
+      // 2. Enharmonic match
+      final enharmonic = specificNote
+          .replaceAll('Db', 'C#')
+          .replaceAll('Eb', 'D#')
+          .replaceAll('Gb', 'F#')
+          .replaceAll('Ab', 'G#')
+          .replaceAll('Bb', 'A#');
+      if (activeScheme.tuningOverrides.containsKey(enharmonic)) {
+        return activeScheme.tuningOverrides[enharmonic]!;
+      }
+
+      // 3. Fallback to octave 4 mapping if available (common for simple instruments)
+      final base = current.alter == 1
+          ? '${current.step}#'
+          : (current.alter == -1 ? '${current.step}b' : current.step);
+      final base4 = '${base}4';
+      final enhBase4 = base4
+          .replaceAll('Db', 'C#')
+          .replaceAll('Eb', 'D#')
+          .replaceAll('Gb', 'F#')
+          .replaceAll('Ab', 'G#')
+          .replaceAll('Bb', 'A#');
+
+      final mapped4 = activeScheme.tuningOverrides[base4] ??
+          activeScheme.tuningOverrides[enhBase4];
+      if (mapped4 != null) {
+        // Apply the same interval shift to the current note's octave
+        final originalMidi4 = MusicConstants.noteNameToMidi(enhBase4);
+        final mappedMidi4 = MusicConstants.noteNameToMidi(mapped4);
+        final shift = mappedMidi4 - originalMidi4;
+        return MusicConstants.midiToNoteName(current.midiNumber + shift);
+      }
+
+      return specificNote;
+    }
+
+    final targetNoteName = resolveTarget();
 
     // Check if the detected note matches the target note (within tolerance).
     final detectedMidi = MusicConstants.noteNameToMidi(detectedNoteName);
     final targetMidi = MusicConstants.noteNameToMidi(targetNoteName);
+
     if (detectedMidi < 0 || targetMidi < 0) return;
 
     if ((detectedMidi - targetMidi).abs() <= 1) {

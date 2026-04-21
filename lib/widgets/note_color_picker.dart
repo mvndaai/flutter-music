@@ -161,6 +161,10 @@ class _NoteColorPickerDialogState extends State<_NoteColorPickerDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, const Color(0x00000000)),
+          child: const Text('Clear'),
+        ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, _selected),
           child: const Text('Select'),

@@ -354,9 +354,9 @@ void main() {
       // Provide an empty in-memory store so SharedPreferences calls don't fail.
       SharedPreferences.setMockInitialValues({});
     });
-    test('starts with default xylophone scheme active', () {
+    test('starts with default rainbow scheme active', () {
       final provider = ColorSchemeProvider();
-      expect(provider.activeId, InstrumentColorScheme.black.id);
+      expect(provider.activeId, 'builtin_rainbow');
     });
 
     test('allSchemes contains all built-ins', () {
@@ -421,7 +421,7 @@ void main() {
 
       await provider.deleteCustom(scheme.id);
 
-      expect(provider.activeId, InstrumentColorScheme.black.id);
+      expect(provider.activeId, 'builtin_rainbow');
     });
   });
 }

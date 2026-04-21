@@ -92,6 +92,7 @@ class InstrumentColorScheme {
     }
 
     final bool isStandard = baseColor == null ||
+        baseColor.alpha == 0 ||
         baseColor.value == 0xFF000000 ||
         baseColor.value == 0xFFFFFFFF;
 

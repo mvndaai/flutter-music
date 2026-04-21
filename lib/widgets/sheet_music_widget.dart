@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/song.dart';
 import '../models/music_note.dart';
 import '../models/measure.dart';
@@ -146,6 +147,7 @@ class SheetMusicWidget extends StatelessWidget {
         isFirstRow: i == 0,
         isLastRow: end == song.measures.length,
         totalSongDuration: totalDuration,
+        measuresPerRow: measuresPerRow,
       ));
       noteOffset += batch.fold(0, (s, m) => s + m.playableNotes.length);
     }
@@ -161,6 +163,7 @@ class _RowData {
   final bool isFirstRow;
   final bool isLastRow;
   final double totalSongDuration;
+  final int measuresPerRow;
 
   const _RowData({
     required this.measures,
@@ -168,6 +171,7 @@ class _RowData {
     required this.isFirstRow,
     required this.isLastRow,
     required this.totalSongDuration,
+    required this.measuresPerRow,
   });
 }
 
@@ -269,22 +273,13 @@ class _StaffPainter extends CustomPainter {
 
     double x = _drawClefAndTimeSig(canvas, clefColor);
 
-    // Calculate duration for each measure in this row
-    final measureDurations = row.measures.map((m) {
-      final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
-      return displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
-    }).toList();
-    
-    // Calculate total duration for THIS ROW and use it for spacing
-    final rowTotalDuration = measureDurations.fold(0.0, (s, d) => s + d);
+    // Make all measures the same width using measuresPerRow (not actual count)
     final availW = size.width - x;
-    final pixelsPerDuration = rowTotalDuration > 0 ? (availW / rowTotalDuration) : 24.0;
+    final measureW = availW / row.measuresPerRow;
 
     int noteOffset = row.firstNoteIndex;
     for (int mi = 0; mi < row.measures.length; mi++) {
       final m = row.measures[mi];
-      final measureDuration = measureDurations[mi];
-      final measureW = measureDuration * pixelsPerDuration;
 
       _drawMeasureNumber(canvas, m.number, x);
       _drawMeasureNotes(canvas, m, x, measureW, noteOffset, clefColor);
@@ -328,7 +323,7 @@ class _StaffPainter extends CustomPainter {
     // Increased size and adjusted position to be slightly lower than before.
     const clefFontSize = _kLS * 3.8;
     // Moved down: Adjusted offset from 1.35 to 1.1 to shift the larger glyph downwards.
-    _drawText(
+    _drawMusicSymbol(
       canvas,
       '𝄞',
       Offset(2, g4y - clefFontSize * 1.1),
@@ -562,13 +557,15 @@ class _StaffPainter extends CustomPainter {
       ..strokeWidth = 1.4;
 
     if (stemUp) {
-      final sx = x + _kNRx;
+      // Stem up: attach to left side of note head
+      final sx = x - _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y - _kStem), p);
       if (type != 'half') {
         _drawFlags(canvas, Offset(sx, y - _kStem), true, type, alpha, clefColor);
       }
     } else {
-      final sx = x - _kNRx;
+      // Stem down: attach to right side of note head
+      final sx = x + _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y + _kStem), p);
       if (type != 'half') {
         _drawFlags(canvas, Offset(sx, y + _kStem), false, type, alpha, clefColor);
@@ -777,6 +774,29 @@ class _StaffPainter extends CustomPainter {
   }
 
   // ── Text helpers ──────────────────────────────────────────────────────────
+
+  /// Draws music symbols using Noto Music font.
+  void _drawMusicSymbol(
+    Canvas canvas,
+    String symbol,
+    Offset topLeft, {
+    double fontSize = 12,
+    Color color = Colors.black,
+    FontWeight fontWeight = FontWeight.normal,
+  }) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: symbol,
+        style: GoogleFonts.notoMusic(
+          fontSize: fontSize,
+          color: color,
+          fontWeight: fontWeight,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, topLeft);
+  }
 
   void _drawText(
     Canvas canvas,

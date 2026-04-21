@@ -596,21 +596,12 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     final widgets = <pw.Widget>[];
     double x = clefWidth + (isFirstRow ? timeSigWidth : 0);
 
-    // Calculate duration for each measure in this row 
-    final measureDurations = measures.map((m) {
-      final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
-      return displayNotes.isEmpty ? 1.0 : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
-    }).toList();
-    
-    // Calculate total duration for THIS ROW and use it for spacing
-    final rowTotalDuration = measureDurations.fold(0.0, (s, d) => s + d);
+    // Make all measures the same width using measuresPerRow (not actual count)
     final availWidth = width - x;
-    final pixelsPerDuration = rowTotalDuration > 0 ? (availWidth / rowTotalDuration) : 24.0;
+    final measureWidth = availWidth / provider.measuresPerRow;
 
     for (int mi = 0; mi < measures.length; mi++) {
       final measure = measures[mi];
-      final measureDuration = measureDurations[mi];
-      final measureWidth = measureDuration * pixelsPerDuration;
 
       // Measure number
       widgets.add(
