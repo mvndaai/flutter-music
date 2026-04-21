@@ -278,24 +278,6 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
                   const Divider(height: 24),
 
-                  // Instrument
-                  ListTile(
-                    title: const Text('Instrument'),
-                    subtitle: Text(provider.activeScheme.name),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.pop(sheetCtx);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ColorSchemesScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const Divider(height: 24),
-
                   // Theme
                   ListTile(
                     title: const Text('Theme'),
@@ -877,6 +859,14 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         appBar: AppBar(
           title: Text(widget.song.title),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.piano_outlined),
+              tooltip: 'Instruments',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
+              ),
+            ),
             IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               tooltip: _isPlaying ? 'Pause' : 'Play',

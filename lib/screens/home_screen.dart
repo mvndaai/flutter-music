@@ -33,14 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('🎵 Music Library'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.piano_outlined),
-            tooltip: 'Instruments',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
-            ),
-          ),
-          IconButton(
             icon: const Icon(Icons.ios_share),
             tooltip: 'Get the app / share',
             onPressed: () => Navigator.push(

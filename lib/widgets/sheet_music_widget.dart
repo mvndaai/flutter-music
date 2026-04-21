@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/song.dart';
 import '../models/music_note.dart';
 import '../models/measure.dart';
+import '../models/instrument_color_scheme.dart';
 import '../providers/color_scheme_provider.dart';
 import '../utils/music_constants.dart';
 import '../utils/note_colors.dart';
@@ -884,43 +885,97 @@ class _ColorLegend extends StatelessWidget {
 
   const _ColorLegend({this.showSolfege = false});
 
-  static const _naturalNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ColorSchemeProvider>();
     final scheme = provider.activeScheme;
     final showLabels = provider.showNoteLabels;
 
+    // Filter to only show notes that have explicit colors or overrides
+    final coloredNotes = kNoteKeys.where((n) => scheme.colors.containsKey(n));
+    final overrideKeys = scheme.octaveOverrides.keys.toList()..sort();
+
     return Wrap(
       spacing: 6,
       runSpacing: 6,
-      children: _naturalNotes.map((note) {
-        final color = scheme.colorForNote(note, 0, context: context);
-        final solfege = MusicConstants.stepToSolfege[note] ?? note;
-        final textColor =
-            color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
-        final label = showSolfege ? '$solfege\n$note' : note;
-        return Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          child: showLabels
-              ? Center(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      height: 1.1,
-                    ),
+      children: [
+        ...coloredNotes.map((note) {
+          final color = scheme.colors[note]!;
+          return _LegendCircle(
+            label: note,
+            color: color,
+            showSolfege: showSolfege,
+            showLabels: showLabels,
+          );
+        }),
+        ...overrideKeys.map((key) {
+          final color = scheme.octaveOverrides[key]!;
+          return _LegendCircle(
+            label: key,
+            color: color,
+            showSolfege: showSolfege,
+            showLabels: showLabels,
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _LegendCircle extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool showSolfege;
+  final bool showLabels;
+
+  const _LegendCircle({
+    required this.label,
+    required this.color,
+    required this.showSolfege,
+    required this.showLabels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Extract base note for solfege lookup (e.g., 'C5' -> 'C')
+    final baseNote = label.replaceAll(RegExp(r'[0-9]'), '');
+    final solfege = MusicConstants.stepToSolfege[baseNote] ?? baseNote;
+    final textColor =
+        color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
+
+    String displayLabel = label;
+    if (showSolfege) {
+      displayLabel = showSolfege ? '$solfege\n$label' : label;
+    }
+
+    return Tooltip(
+      message: label,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Theme.of(context).dividerColor,
+            width: 1,
+          ),
+        ),
+        child: showLabels
+            ? Center(
+                child: Text(
+                  displayLabel,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    height: 1.1,
                   ),
-                )
-              : null,
-        );
-      }).toList(),
+                ),
+              )
+            : null,
+      ),
     );
   }
 }
