@@ -247,6 +247,18 @@ class ColorSchemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> cloneScheme(InstrumentColorScheme scheme) async {
+    final cloned = scheme.copyWith(
+      id: _uuid.v7(),
+      name: '${scheme.name} (Copy)',
+      isBuiltIn: false,
+      isImported: false,
+    );
+    _customSchemes.add(cloned);
+    await _persistCustom();
+    notifyListeners();
+  }
+
   Future<void> _persistCustom() async {
     final prefs = await SharedPreferences.getInstance();
     final encoded = jsonEncode(_customSchemes.map((s) => s.toJson()).toList());

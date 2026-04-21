@@ -33,6 +33,13 @@ class InstrumentColorScheme {
   /// Optional octave-specific overrides, e.g. `{'C5': Color(0xFFE91E63)}`.
   final Map<String, Color> octaveOverrides;
 
+  /// Notes that are disabled for this instrument (e.g. no sharps on a simple recorder).
+  final Set<String> disabledKeys;
+
+  /// Optional tuning overrides, mapping an intended note name to what is actually heard.
+  /// E.g. `{'C5': 'B4'}` means when the app expects C5, it should listen for B4.
+  final Map<String, String> tuningOverrides;
+
   const InstrumentColorScheme({
     required this.id,
     required this.name,
@@ -41,6 +48,8 @@ class InstrumentColorScheme {
     this.isBuiltIn = false,
     this.isImported = false,
     this.octaveOverrides = const {},
+    this.disabledKeys = const {},
+    this.tuningOverrides = const {},
   });
 
   /// Returns the color for a note given its [step] (C–B), [alter] (-1/0/+1),
@@ -101,6 +110,8 @@ class InstrumentColorScheme {
     String? icon,
     Map<String, Color>? colors,
     Map<String, Color>? octaveOverrides,
+    Set<String>? disabledKeys,
+    Map<String, String>? tuningOverrides,
     bool? isBuiltIn,
     bool? isImported,
   }) {
@@ -112,6 +123,8 @@ class InstrumentColorScheme {
       isBuiltIn: isBuiltIn ?? this.isBuiltIn,
       isImported: isImported ?? this.isImported,
       octaveOverrides: octaveOverrides ?? Map.from(this.octaveOverrides),
+      disabledKeys: disabledKeys ?? Set.from(this.disabledKeys),
+      tuningOverrides: tuningOverrides ?? Map.from(this.tuningOverrides),
     );
   }
 
@@ -125,12 +138,16 @@ class InstrumentColorScheme {
         if (octaveOverrides.isNotEmpty)
           'octaveOverrides':
               octaveOverrides.map((k, v) => MapEntry(k, v.toARGB32())),
+        if (disabledKeys.isNotEmpty) 'disabledKeys': disabledKeys.toList(),
+        if (tuningOverrides.isNotEmpty) 'tuningOverrides': tuningOverrides,
       };
 
   factory InstrumentColorScheme.fromJson(Map<String, dynamic> json, {String? fallbackId}) {
     final rawColors = json['colors'] as Map<String, dynamic>? ?? {};
     final rawOverrides =
         json['octaveOverrides'] as Map<String, dynamic>? ?? {};
+    final rawDisabled = json['disabledKeys'] as List<dynamic>? ?? [];
+    final rawTuning = json['tuningOverrides'] as Map<String, dynamic>? ?? {};
     return InstrumentColorScheme(
       id: (json['id'] as String?) ?? fallbackId ?? const Uuid().v7(),
       name: json['name'] as String,
@@ -140,6 +157,8 @@ class InstrumentColorScheme {
       colors: rawColors.map((k, v) => MapEntry(k, Color(v as int))),
       octaveOverrides:
           rawOverrides.map((k, v) => MapEntry(k, Color(v as int))),
+      disabledKeys: rawDisabled.cast<String>().toSet(),
+      tuningOverrides: rawTuning.cast<String, String>(),
     );
   }
 

@@ -43,9 +43,11 @@ class MusicConstants {
 
   /// Returns the closest note name to a given frequency (Hz).
   static String frequencyToNoteName(double frequency) {
-    if (frequency <= 0) return '';
-    final midiFloat = 12 * (math.log(frequency / 440.0) / math.log(2)) + 69;
-    final midi = midiFloat.round();
+    return midiToNoteName(frequencyToMidi(frequency));
+  }
+
+  /// Returns the note name for a given MIDI number.
+  static String midiToNoteName(int midi) {
     if (midi < 0 || midi > 127) return '';
     final semitone = midi % 12;
     final octave = (midi ~/ 12) - 1;
@@ -56,5 +58,22 @@ class MusicConstants {
   static int frequencyToMidi(double frequency) {
     if (frequency <= 0) return -1;
     return (12 * math.log(frequency / 440.0) / math.log(2) + 69).round();
+  }
+
+  /// Returns the MIDI number for a given note name (e.g. "C5", "F#4").
+  static int noteNameToMidi(String name) {
+    if (name.isEmpty) return -1;
+    // Parse e.g. "C5", "F#4", "Bb3"
+    final match = RegExp(r'^([A-G])(#|b)?(-?\d+)$').firstMatch(name);
+    if (match == null) return -1;
+    final step = match.group(1)!;
+    final acc = match.group(2) ?? '';
+    final octave = int.tryParse(match.group(3)!) ?? 4;
+    const semitones = {
+      'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11
+    };
+    final base = semitones[step] ?? 0;
+    final alter = acc == '#' ? 1 : acc == 'b' ? -1 : 0;
+    return 12 * (octave + 1) + base + alter;
   }
 }
