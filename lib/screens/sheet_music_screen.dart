@@ -910,10 +910,10 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         final ly = topMargin + staffHeight - lp * ls / 2;
         widgets.add(
           pw.Positioned(
-            left: x - 10,
+            left: x - 6,
             top: ly - 0.3,
             child: pw.Container(
-              width: 20,
+              width: 12,
               height: 0.6,
               color: PdfColors.grey700,
             ),
@@ -929,10 +929,10 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         final ly = topMargin + staffHeight - lp * ls / 2;
         widgets.add(
           pw.Positioned(
-            left: x - 10,
+            left: x - 6,
             top: ly - 0.3,
             child: pw.Container(
-              width: 20,
+              width: 12,
               height: 0.6,
               color: PdfColors.grey700,
             ),
