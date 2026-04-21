@@ -10,6 +10,7 @@ import '../models/music_note.dart';
 import '../models/song.dart';
 import '../providers/color_scheme_provider.dart';
 import '../services/tone_player.dart';
+import '../utils/music_constants.dart';
 import '../widgets/sheet_music_widget.dart';
 import 'practice_screen.dart';
 import 'color_schemes_screen.dart';
@@ -437,65 +438,91 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                 return pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    if (pageStart == 0) ...[
-                      pw.Text(
-                        song.title,
-                        style: pw.TextStyle(
-                          fontSize: 20,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      if (song.composer.isNotEmpty)
-                        pw.Text(
-                          song.composer,
-                          style: const pw.TextStyle(fontSize: 12),
-                        ),
-                      pw.Row(
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text(
-                            'Instrument: ${provider.activeScheme.name} ',
-                            style: const pw.TextStyle(fontSize: 12),
-                          ),
-                          if (provider.activeScheme.emoji != null)
+                          if (pageStart == 0) ...[
                             pw.Text(
-                              provider.activeScheme.emoji!,
-                              style: const pw.TextStyle(fontSize: 12),
+                              song.title,
+                              style: pw.TextStyle(
+                                fontSize: 20,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
                             ),
+                            if (song.composer.isNotEmpty)
+                              pw.Text(
+                                song.composer,
+                                style: const pw.TextStyle(fontSize: 12),
+                              ),
+                            pw.SizedBox(height: 12),
+                            pw.Divider(),
+                            pw.SizedBox(height: 8),
+                          ],
+                          ...pageRows.asMap().entries.map((entry) {
+                            final rowIndex = pageStart + entry.key;
+                            final rowMeasures = entry.value;
+                            final isFirstRow = rowIndex == 0;
+                            final isLastRow = rowIndex == rows.length - 1;
+
+                            return pw.Padding(
+                              padding: const pw.EdgeInsets.only(bottom: 16),
+                              child: pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  _buildStaffRow(
+                                    rowMeasures,
+                                    provider,
+                                    pageWidth,
+                                    lineSpacing,
+                                    topMargin,
+                                    staffHeight,
+                                    clefWidth,
+                                    timeSigWidth,
+                                    isFirstRow,
+                                    isLastRow,
+                                    totalSongDuration,
+                                    musicFont,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ],
                       ),
-                      pw.SizedBox(height: 12),
-                      pw.Divider(),
-                      pw.SizedBox(height: 8),
-                    ],
-                    ...pageRows.asMap().entries.map((entry) {
-                      final rowIndex = pageStart + entry.key;
-                      final rowMeasures = entry.value;
-                      final isFirstRow = rowIndex == 0;
-                      final isLastRow = rowIndex == rows.length - 1;
-
-                      return pw.Padding(
-                        padding: const pw.EdgeInsets.only(bottom: 16),
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    ),
+                    // Footer
+                    pw.Divider(),
+                    pw.SizedBox(height: 4),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          MusicConstants.appName,
+                          style: const pw.TextStyle(
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.Row(
                           children: [
-                            _buildStaffRow(
-                              rowMeasures,
-                              provider,
-                              pageWidth,
-                              lineSpacing,
-                              topMargin,
-                              staffHeight,
-                              clefWidth,
-                              timeSigWidth,
-                              isFirstRow,
-                              isLastRow,
-                              totalSongDuration,
-                              musicFont,
+                            pw.Text(
+                              'Instrument: ${provider.activeScheme.name} ',
+                              style: const pw.TextStyle(
+                                fontSize: 9,
+                                color: PdfColors.grey700,
+                              ),
                             ),
+                            if (provider.activeScheme.emoji != null)
+                              pw.Text(
+                                provider.activeScheme.emoji!,
+                                style: const pw.TextStyle(fontSize: 9),
+                              ),
                           ],
                         ),
-                      );
-                    }),
+                      ],
+                    ),
                   ],
                 );
               },
