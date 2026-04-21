@@ -557,15 +557,15 @@ class _StaffPainter extends CustomPainter {
       ..strokeWidth = 1.4;
 
     if (stemUp) {
-      // Stem up: attach to left side of note head
-      final sx = x - _kNRx;
+      // Stem up: attach to right side of note head
+      final sx = x + _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y - _kStem), p);
       if (type != 'half') {
         _drawFlags(canvas, Offset(sx, y - _kStem), true, type, alpha, clefColor);
       }
     } else {
-      // Stem down: attach to right side of note head
-      final sx = x + _kNRx;
+      // Stem down: attach to left side of note head
+      final sx = x - _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y + _kStem), p);
       if (type != 'half') {
         _drawFlags(canvas, Offset(sx, y + _kStem), false, type, alpha, clefColor);
