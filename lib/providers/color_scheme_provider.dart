@@ -20,7 +20,7 @@ class ColorSchemeProvider extends ChangeNotifier {
 
   final Uuid _uuid = const Uuid();
 
-  String _activeId = InstrumentColorScheme.defaultXylophone.id;
+  String _activeId = InstrumentColorScheme.black.id;
   List<InstrumentColorScheme> _customSchemes = [];
 
   /// When false, note circles show only color – no text label at all.
@@ -52,14 +52,14 @@ class ColorSchemeProvider extends ChangeNotifier {
   InstrumentColorScheme get activeScheme =>
       allSchemes.firstWhere(
         (s) => s.id == _activeId,
-        orElse: () => InstrumentColorScheme.defaultXylophone,
+        orElse: () => InstrumentColorScheme.black,
       );
 
   /// Loads persisted preferences.  Call once at startup.
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _activeId =
-        prefs.getString(_activeIdKey) ?? InstrumentColorScheme.defaultXylophone.id;
+        prefs.getString(_activeIdKey) ?? InstrumentColorScheme.black.id;
     _showNoteLabels = prefs.getBool(_showLabelsKey) ?? true;
     _showLetter = prefs.getBool(_showLetterKey) ?? true;
     _showSolfege = prefs.getBool(_showSolfegeKey) ?? false;
@@ -91,8 +91,20 @@ class ColorSchemeProvider extends ChangeNotifier {
   }
 
   /// Returns the color for a note using the active scheme.
-  Color colorForNote(String step, double alter, {int? octave}) =>
-      activeScheme.colorForNote(step, alter, octave: octave);
+  Color colorForNote(
+    String step,
+    double alter, {
+    int? octave,
+    BuildContext? context,
+    Brightness? brightness,
+  }) =>
+      activeScheme.colorForNote(
+        step,
+        alter,
+        octave: octave,
+        context: context,
+        brightness: brightness,
+      );
 
   /// Activates the scheme with the given [id].
   Future<void> setActive(String id) async {
@@ -171,11 +183,12 @@ class ColorSchemeProvider extends ChangeNotifier {
   }
 
   /// Creates a new custom scheme as a copy of the active scheme.
-  Future<InstrumentColorScheme> createCustom({String? name}) async {
+  Future<InstrumentColorScheme> createCustom({String? name, String? icon}) async {
     final base = activeScheme;
     final scheme = InstrumentColorScheme(
       id: _uuid.v7(),
       name: name ?? 'Custom ${_customSchemes.length + 1}',
+      icon: icon,
       colors: Map.from(base.colors),
       octaveOverrides: Map.from(base.octaveOverrides),
     );
@@ -198,7 +211,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   Future<void> deleteCustom(String id) async {
     _customSchemes.removeWhere((s) => s.id == id);
     if (_activeId == id) {
-      _activeId = InstrumentColorScheme.defaultXylophone.id;
+      _activeId = InstrumentColorScheme.black.id;
     }
     await _persistCustom();
     notifyListeners();

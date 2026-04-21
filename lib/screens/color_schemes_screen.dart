@@ -15,71 +15,50 @@ class ColorSchemesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Instrument Colors'),
-        actions: [
-          Consumer<ColorSchemeProvider>(
-            builder: (context, provider, _) => IconButton(
-              icon: Icon(
-                provider.showNoteLabels
-                    ? Icons.label
-                    : Icons.label_off,
-              ),
-              tooltip: provider.showNoteLabels
-                  ? 'Note labels: ON – tap to turn off'
-                  : 'Note labels: OFF – tap to turn on',
-              onPressed: () =>
-                  provider.setShowNoteLabels(!provider.showNoteLabels),
-            ),
-          ),
-        ],
+        title: const Text('Instruments'),
       ),
       body: Consumer<ColorSchemeProvider>(
         builder: (context, provider, _) {
           final schemes = provider.allSchemes;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Note-label toggle banner
-              _LabelToggleBanner(provider: provider),
-
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: schemes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 6),
-                  itemBuilder: (context, index) {
-                    final scheme = schemes[index];
-                    return _SchemeCard(
-                      scheme: scheme,
-                      isActive: provider.activeId == scheme.id,
-                      onActivate: () => provider.setActive(scheme.id),
-                      onEdit: scheme.isBuiltIn
-                          ? null
-                          : () => _openEditor(context, scheme, provider),
-                      onDelete: scheme.isBuiltIn
-                          ? null
-                          : () => _confirmDelete(context, scheme, provider),
-                    );
-                  },
-                ),
-              ),
-            ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: schemes.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemBuilder: (context, index) {
+              final scheme = schemes[index];
+              return _SchemeCard(
+                scheme: scheme,
+                isActive: provider.activeId == scheme.id,
+                onActivate: () => provider.setActive(scheme.id),
+                onEdit: scheme.isBuiltIn
+                    ? null
+                    : () => _openEditor(context, scheme, provider),
+                onDelete: scheme.isBuiltIn
+                    ? null
+                    : () => _confirmDelete(context, scheme, provider),
+              );
+            },
           );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createNew(context),
         icon: const Icon(Icons.add),
-        label: const Text('New Scheme'),
+        label: const Text('New'),
       ),
     );
   }
 
   Future<void> _createNew(BuildContext context) async {
     final provider = context.read<ColorSchemeProvider>();
-    final name = await _promptName(context, initial: '');
-    if (name == null) return;
-    final scheme = await provider.createCustom(name: name.trim());
+    final result = await _promptNameAndIcon(context, initialName: '', initialIcon: '');
+    if (result == null) return;
+    final name = result['name'] ?? '';
+    final icon = result['icon'] ?? '';
+    final scheme = await provider.createCustom(
+      name: name.trim(),
+      icon: icon.trim(),
+    );
     if (context.mounted) {
       await _openEditor(context, scheme, provider);
     }
@@ -106,7 +85,7 @@ class ColorSchemesScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete scheme'),
+        title: const Text('Delete instrument'),
         content: Text('Delete "${scheme.name}"?'),
         actions: [
           TextButton(
@@ -124,46 +103,71 @@ class ColorSchemesScreen extends StatelessWidget {
     if (ok == true) await provider.deleteCustom(scheme.id);
   }
 
-  Future<String?> _promptName(BuildContext context, {required String initial}) {
-    return showDialog<String>(
+  Future<Map<String, String>?> _promptNameAndIcon(
+    BuildContext context, {
+    required String initialName,
+    required String initialIcon,
+  }) {
+    return showDialog<Map<String, String>>(
       context: context,
-      builder: (_) => _NameDialog(initial: initial),
+      builder: (_) => _NameIconDialog(
+        initialName: initialName,
+        initialIcon: initialIcon,
+      ),
     );
   }
 }
 
-// ── Simple name-entry dialog with proper controller disposal ─────────────
+// ── Name & Icon dialog ───────────────────────────────────────────────────
 
-class _NameDialog extends StatefulWidget {
-  final String initial;
-  const _NameDialog({required this.initial});
+class _NameIconDialog extends StatefulWidget {
+  final String initialName;
+  final String? initialIcon;
+  const _NameIconDialog({required this.initialName, this.initialIcon});
 
   @override
-  State<_NameDialog> createState() => _NameDialogState();
+  State<_NameIconDialog> createState() => _NameIconDialogState();
 }
 
-class _NameDialogState extends State<_NameDialog> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initial);
+class _NameIconDialogState extends State<_NameIconDialog> {
+  late final TextEditingController _nameController =
+      TextEditingController(text: widget.initialName);
+  late final TextEditingController _iconController =
+      TextEditingController(text: widget.initialIcon);
 
   @override
   void dispose() {
-    _controller.dispose();
+    _nameController.dispose();
+    _iconController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Scheme name'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        decoration: const InputDecoration(
-          hintText: 'e.g. My Blue Xylophone',
-          border: OutlineInputBorder(),
-        ),
-        onSubmitted: (v) => Navigator.pop(context, v),
+      title: const Text('Instrument info'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'e.g. My Blue Xylophone',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _iconController,
+            decoration: const InputDecoration(
+              labelText: 'Icon URL (optional)',
+              hintText: 'https://...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -171,41 +175,13 @@ class _NameDialogState extends State<_NameDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.pop(context, _controller.text),
+          onPressed: () => Navigator.pop(context, {
+            'name': _nameController.text,
+            'icon': _iconController.text,
+          }),
           child: const Text('OK'),
         ),
       ],
-    );
-  }
-}
-
-// ── Banner showing the global note-label toggle ───────────────────────────
-
-class _LabelToggleBanner extends StatelessWidget {
-  final ColorSchemeProvider provider;
-  const _LabelToggleBanner({required this.provider});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.label_outline, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Note labels',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          Switch(
-            value: provider.showNoteLabels,
-            onChanged: provider.setShowNoteLabels,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -242,7 +218,22 @@ class _SchemeCard extends StatelessWidget {
                 isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
                 color: isActive ? Theme.of(context).colorScheme.primary : null,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
+              if (scheme.icon != null && scheme.icon!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Image.network(
+                    scheme.icon!,
+                    width: 32,
+                    height: 32,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.music_note, size: 32),
+                  ),
+                )
+              else
+                const Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Icon(Icons.music_note, size: 32),
+                ),
               // Color swatch row
               Expanded(
                 child: Column(
@@ -272,7 +263,7 @@ class _SchemeCard extends StatelessWidget {
                   itemBuilder: (_) => [
                     if (onEdit != null)
                       const PopupMenuItem(
-                          value: 'edit', child: Text('Edit colors')),
+                          value: 'edit', child: Text('Edit')),
                     if (onDelete != null)
                       const PopupMenuItem(
                           value: 'delete', child: Text('Delete')),
@@ -295,7 +286,7 @@ class _ColorSwatchRow extends StatelessWidget {
     return Wrap(
       spacing: 4,
       children: kNoteKeys.map((note) {
-        final color = scheme.colors[note] ?? Colors.grey;
+        final color = scheme.colorForNote(note, 0, context: context);
         return Tooltip(
           message: note,
           child: Container(
@@ -304,7 +295,10 @@ class _ColorSwatchRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1),
+              border: Border.all(
+                color: Theme.of(context).dividerColor,
+                width: 1,
+              ),
             ),
           ),
         );
@@ -327,6 +321,7 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
   late Map<String, Color> _colors;
   late Map<String, Color> _octaveOverrides;
   late String _name;
+  late String? _icon;
   bool _dirty = false;
 
   @override
@@ -335,11 +330,13 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
     _colors = Map.from(widget.scheme.colors);
     _octaveOverrides = Map.from(widget.scheme.octaveOverrides);
     _name = widget.scheme.name;
+    _icon = widget.scheme.icon;
   }
 
   Future<void> _save() async {
     final updated = widget.scheme.copyWith(
       name: _name,
+      icon: _icon,
       colors: _colors,
       octaveOverrides: _octaveOverrides,
     );
@@ -352,14 +349,20 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
     }
   }
 
-  Future<void> _rename() async {
-    final result = await showDialog<String>(
+  Future<void> _editInfo() async {
+    final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (_) => _NameDialog(initial: _name),
+      builder: (_) => _NameIconDialog(
+        initialName: _name,
+        initialIcon: _icon ?? '',
+      ),
     );
-    if (result != null && result.trim().isNotEmpty) {
+    if (result != null) {
+      final name = result['name'] ?? '';
+      final icon = result['icon'] ?? '';
       setState(() {
-        _name = result.trim();
+        _name = name.trim();
+        _icon = icon.trim();
         _dirty = true;
       });
     }
@@ -392,8 +395,8 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: 'Rename',
-            onPressed: _rename,
+            tooltip: 'Edit name and icon',
+            onPressed: _editInfo,
           ),
           if (_dirty)
             IconButton(
@@ -415,7 +418,7 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
           // ── Chromatic note rows ────────────────────────────────────────
           if (index < 12) {
             final note = kNoteKeys[index];
-            final color = _colors[note] ?? Colors.grey;
+            final color = widget.scheme.colorForNote(note, 0, context: context);
             final textColor = color.computeLuminance() > 0.35
                 ? Colors.black87
                 : Colors.white;
@@ -445,9 +448,12 @@ class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
               ),
               trailing: const Icon(Icons.color_lens_outlined),
               onTap: () async {
+                // If it's pure black or white, it might be the default "theme-aware" color.
+                // We pass the actual stored color (or black as default) to the picker.
+                final storedColor = _colors[note] ?? Colors.black;
                 final picked = await showNoteColorPicker(
                   context,
-                  current: color,
+                  current: storedColor,
                   label: note,
                 );
                 if (picked != null) {

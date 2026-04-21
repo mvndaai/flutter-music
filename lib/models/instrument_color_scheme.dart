@@ -23,6 +23,7 @@ const Map<String, String> kFlatToSharp = {
 class InstrumentColorScheme {
   final String id;
   final String name;
+  final String? icon;
 
   /// Whether this is a built-in (non-deletable) scheme.
   final bool isBuiltIn;
@@ -37,6 +38,7 @@ class InstrumentColorScheme {
   const InstrumentColorScheme({
     required this.id,
     required this.name,
+    this.icon,
     required this.colors,
     this.isBuiltIn = false,
     this.octaveOverrides = const {},
@@ -44,43 +46,73 @@ class InstrumentColorScheme {
 
   /// Returns the color for a note given its [step] (C–B), [alter] (-1/0/+1),
   /// and optional [octave].  Octave-specific overrides are checked first.
-  Color colorForNote(String step, double alter, {int? octave}) {
+  ///
+  /// Either [context] or [brightness] must be provided for theme-aware fallback.
+  Color colorForNote(
+    String step,
+    double alter, {
+    int? octave,
+    BuildContext? context,
+    Brightness? brightness,
+  }) {
+    Color? baseColor;
+
     if (octave != null && octaveOverrides.isNotEmpty) {
       final key = alter == 1
           ? '$step#$octave'
           : alter == -1
               ? '${step}b$octave'
               : '$step$octave';
-      if (octaveOverrides.containsKey(key)) return octaveOverrides[key]!;
+      if (octaveOverrides.containsKey(key)) baseColor = octaveOverrides[key]!;
 
       // Also try the enharmonic sharp form for flat notes.
-      if (alter == -1) {
+      if (baseColor == null && alter == -1) {
         final enharmonic = kFlatToSharp['${step}b'];
         if (enharmonic != null &&
             octaveOverrides.containsKey('$enharmonic$octave')) {
-          return octaveOverrides['$enharmonic$octave']!;
+          baseColor = octaveOverrides['$enharmonic$octave']!;
         }
       }
     }
 
-    if (alter == 1) {
-      return colors['$step#'] ?? colors[step] ?? Colors.grey;
-    } else if (alter == -1) {
-      final enharmonic = kFlatToSharp['${step}b'];
-      return colors[enharmonic] ?? colors[step] ?? Colors.grey;
+    if (baseColor == null) {
+      if (alter == 1) {
+        baseColor = colors['$step#'] ?? colors[step];
+      } else if (alter == -1) {
+        final enharmonic = kFlatToSharp['${step}b'];
+        baseColor = colors[enharmonic] ?? colors[step];
+      } else {
+        baseColor = colors[step];
+      }
     }
-    return colors[step] ?? Colors.grey;
+
+    // Dynamic standard: If it's pure black, pure white, or not set, match the theme.
+    // We check the raw ARGB value to catch both Colors.black and Color(0xFF000000).
+    final bool isStandard = baseColor == null ||
+        baseColor.value == 0xFF000000 ||
+        baseColor.value == 0xFFFFFFFF;
+
+    if (isStandard) {
+      final isDark = brightness == Brightness.dark ||
+          (context != null && Theme.of(context).brightness == Brightness.dark);
+      // Return high-contrast white/black for the "Standard" look.
+      return isDark ? Colors.white : Colors.black;
+    }
+
+    return baseColor;
   }
 
   /// Creates a copy with optionally updated fields.
   InstrumentColorScheme copyWith({
     String? name,
+    String? icon,
     Map<String, Color>? colors,
     Map<String, Color>? octaveOverrides,
   }) {
     return InstrumentColorScheme(
       id: id,
       name: name ?? this.name,
+      icon: icon ?? this.icon,
       colors: colors ?? Map.from(this.colors),
       isBuiltIn: isBuiltIn,
       octaveOverrides: octaveOverrides ?? Map.from(this.octaveOverrides),
@@ -90,6 +122,7 @@ class InstrumentColorScheme {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'icon': icon,
         'colors': colors.map((k, v) => MapEntry(k, v.toARGB32())),
         if (octaveOverrides.isNotEmpty)
           'octaveOverrides':
@@ -103,6 +136,7 @@ class InstrumentColorScheme {
     return InstrumentColorScheme(
       id: json['id'] as String,
       name: json['name'] as String,
+      icon: json['icon'] as String?,
       colors: raw.map((k, v) => MapEntry(k, Color(v as int))),
       octaveOverrides:
           rawOverrides.map((k, v) => MapEntry(k, Color(v as int))),
@@ -110,6 +144,14 @@ class InstrumentColorScheme {
   }
 
   // ── Built-in schemes ──────────────────────────────────────────────────────
+
+  /// Standard scheme that follows the theme (black in light mode, white in dark).
+  static const InstrumentColorScheme black = InstrumentColorScheme(
+    id: 'builtin_black',
+    name: 'Standard',
+    isBuiltIn: true,
+    colors: {}, // Empty map triggers theme-aware fallback in colorForNote
+  );
 
   /// Xylophone with the traditional 8-bar diatonic palette:
   /// C=pink, D=blue, E=green, F=lime, G=yellow, A=orange, B=red.
@@ -218,6 +260,7 @@ class InstrumentColorScheme {
   );
 
   static const List<InstrumentColorScheme> builtIns = [
+    black,
     myXylophone,
     defaultXylophone,
     rainbow,

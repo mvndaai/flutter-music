@@ -272,24 +272,53 @@ void main() {
       }
     });
 
-    test('colorForNote returns correct color for natural note', () {
-      const color = Color(0xFFE53935);
-      expect(
-          InstrumentColorScheme.defaultXylophone.colorForNote('C', 0), color);
+    testWidgets('colorForNote returns correct color for natural note', (tester) async {
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: Builder(builder: (context) {
+        const color = Color(0xFFE53935);
+        expect(InstrumentColorScheme.defaultXylophone.colorForNote('C', 0, context: context), color);
+        return const SizedBox();
+      }))));
     });
 
-    test('colorForNote returns sharp color for alter=1', () {
-      final sharp = InstrumentColorScheme.defaultXylophone.colorForNote('C', 1);
-      final natural = InstrumentColorScheme.defaultXylophone.colorForNote('C', 0);
-      expect(sharp, isNot(equals(natural)));
+    testWidgets('colorForNote returns sharp color for alter=1', (tester) async {
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: Builder(builder: (context) {
+        final sharp = InstrumentColorScheme.defaultXylophone.colorForNote('C', 1, context: context);
+        final natural = InstrumentColorScheme.defaultXylophone.colorForNote('C', 0, context: context);
+        expect(sharp, isNot(equals(natural)));
+        return const SizedBox();
+      }))));
     });
 
-    test('colorForNote uses flat enharmonic mapping for alter=-1', () {
-      // Bb should map to A# color
-      final bbColor = InstrumentColorScheme.defaultXylophone.colorForNote('B', -1);
-      final aSharpColor =
-          InstrumentColorScheme.defaultXylophone.colors['A#']!;
-      expect(bbColor, aSharpColor);
+    testWidgets('colorForNote uses flat enharmonic mapping for alter=-1', (tester) async {
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: Builder(builder: (context) {
+        // Bb should map to A# color
+        final bbColor = InstrumentColorScheme.defaultXylophone.colorForNote('B', -1, context: context);
+        final aSharpColor = InstrumentColorScheme.defaultXylophone.colors['A#']!;
+        expect(bbColor, aSharpColor);
+        return const SizedBox();
+      }))));
+    });
+
+    testWidgets('Standard scheme is theme-aware (black in light mode, white in dark)', (tester) async {
+      // Light Mode
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(brightness: Brightness.light),
+        home: Scaffold(body: Builder(builder: (context) {
+          final color = InstrumentColorScheme.black.colorForNote('C', 0, context: context);
+          expect(color, Colors.black87);
+          return const SizedBox();
+        })),
+      ));
+
+      // Dark Mode
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(body: Builder(builder: (context) {
+          final color = InstrumentColorScheme.black.colorForNote('C', 0, context: context);
+          expect(color, Colors.white70);
+          return const SizedBox();
+        })),
+      ));
     });
 
     test('toJson / fromJson roundtrip preserves all fields', () {
@@ -327,7 +356,7 @@ void main() {
     });
     test('starts with default xylophone scheme active', () {
       final provider = ColorSchemeProvider();
-      expect(provider.activeId, InstrumentColorScheme.defaultXylophone.id);
+      expect(provider.activeId, InstrumentColorScheme.black.id);
     });
 
     test('allSchemes contains all built-ins', () {
@@ -392,7 +421,7 @@ void main() {
 
       await provider.deleteCustom(scheme.id);
 
-      expect(provider.activeId, InstrumentColorScheme.defaultXylophone.id);
+      expect(provider.activeId, InstrumentColorScheme.black.id);
     });
   });
 }

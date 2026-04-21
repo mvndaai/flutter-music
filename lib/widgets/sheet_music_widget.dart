@@ -197,7 +197,7 @@ class _StaffRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: LayoutBuilder(
-        builder: (_, constraints) => SizedBox(
+        builder: (context, constraints) => SizedBox(
           height: _kRowH,
           width: constraints.maxWidth,
           child: CustomPaint(
@@ -209,7 +209,7 @@ class _StaffRow extends StatelessWidget {
               labelsBelow: labelsBelow,
               coloredLabels: coloredLabels,
               colorProvider: cp,
-              isDark: isDark,
+              context: context,
             ),
           ),
         ),
@@ -228,7 +228,7 @@ class _StaffPainter extends CustomPainter {
   final bool labelsBelow;
   final bool coloredLabels;
   final ColorSchemeProvider colorProvider;
-  final bool isDark;
+  final BuildContext context;
 
   _StaffPainter({
     required this.row,
@@ -238,7 +238,7 @@ class _StaffPainter extends CustomPainter {
     required this.labelsBelow,
     required this.coloredLabels,
     required this.colorProvider,
-    required this.isDark,
+    required this.context,
   }) : super(repaint: colorProvider);
 
   @override
@@ -248,24 +248,25 @@ class _StaffPainter extends CustomPainter {
       old.showLetter != showLetter ||
       old.labelsBelow != labelsBelow ||
       old.coloredLabels != coloredLabels ||
-      old.isDark != isDark ||
+      old.context != context ||
       old.row != row;
 
   // ── paint ──────────────────────────────────────────────────────────────────
 
   @override
   void paint(Canvas canvas, Size size) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Use contrast colors
-    final color = isDark ? Colors.white70 : Colors.black87;
+    final clefColor = isDark ? Colors.white70 : Colors.black87;
 
     // Use contrast colors
     final linePaint = Paint()
-      ..color = color.withValues(alpha: 0.6)
+      ..color = clefColor.withValues(alpha: 0.6)
       ..strokeWidth = 1.0;
 
     _drawStaffLines(canvas, size.width, linePaint);
 
-    double x = _drawClefAndTimeSig(canvas, color);
+    double x = _drawClefAndTimeSig(canvas, clefColor);
 
     // Calculate duration for each measure in this row
     final measureDurations = row.measures.map((m) {
@@ -285,17 +286,17 @@ class _StaffPainter extends CustomPainter {
       final measureW = measureDuration * pixelsPerDuration;
 
       _drawMeasureNumber(canvas, m.number, x);
-      _drawMeasureNotes(canvas, m, x, measureW, noteOffset);
+      _drawMeasureNotes(canvas, m, x, measureW, noteOffset, clefColor);
       noteOffset += m.playableNotes.length;
       x += measureW;
 
       // Bar line
       final isLastMeasureInRow = mi == row.measures.length - 1;
       if (isLastMeasureInRow && row.isLastRow) {
-        _drawDoubleBarLine(canvas, x, color);
+        _drawDoubleBarLine(canvas, x, clefColor);
       } else {
         final bp = Paint()
-          ..color = color.withValues(alpha: 0.6)
+          ..color = clefColor.withValues(alpha: 0.6)
           ..strokeWidth = isLastMeasureInRow ? 2.0 : 1.2;
         canvas.drawLine(
           Offset(x, _kTopMargin),
@@ -384,6 +385,7 @@ class _StaffPainter extends CustomPainter {
     double startX,
     double measureWidth,
     int noteOffset,
+    Color clefColor,
   ) {
     final displayNotes =
         m.notes.where((n) => !n.isChordContinuation).toList();
@@ -410,12 +412,12 @@ class _StaffPainter extends CustomPainter {
       final noteX = startX + leftPadding + ((cumulativeDuration + note.duration / 2) / totalDuration) * contentWidth;
 
       if (note.isRest) {
-        _drawRest(canvas, noteX, note.type);
+        _drawRest(canvas, noteX, note.type, clefColor);
       } else {
         final globalIdx = noteOffset + playableIdx;
         final isActive = globalIdx == activeNoteIndex;
         final isPast = activeNoteIndex >= 0 && globalIdx < activeNoteIndex;
-        _drawNote(canvas, note, noteX, isActive, isPast);
+        _drawNote(canvas, note, noteX, isActive, isPast, clefColor);
         playableIdx++;
       }
       
@@ -431,18 +433,24 @@ class _StaffPainter extends CustomPainter {
     double x,
     bool isActive,
     bool isPast,
+    Color clefColor,
   ) {
     final pos = _staffPos(note.step, note.octave);
     final y = _posToY(pos);
-    final color = colorProvider.colorForNote(note.step, note.alter, octave: note.octave);
+    final color = colorProvider.colorForNote(
+      note.step,
+      note.alter,
+      octave: note.octave,
+      context: context,
+    );
     final alpha = isPast ? 0.30 : 1.0;
 
-    _drawLedgerLines(canvas, x, pos, alpha);
-    _drawAccidental(canvas, note.alter, x, y, alpha);
+    _drawLedgerLines(canvas, x, pos, alpha, clefColor);
+    _drawAccidental(canvas, note.alter, x, y, alpha, clefColor);
     _drawNoteHead(canvas, note.type, x, y, color, alpha, isActive);
-    _drawStem(canvas, note.type, x, y, pos, alpha, color);
-    if (note.isDotted) _drawDot(canvas, x, y, alpha);
-    _drawNoteLabel(canvas, note, x, y, pos, color, alpha);
+    _drawStem(canvas, note.type, x, y, pos, alpha, color, clefColor);
+    if (note.isDotted) _drawDot(canvas, x, y, alpha, clefColor);
+    _drawNoteLabel(canvas, note, x, y, pos, color, alpha, clefColor);
   }
 
   // ── Accidental (sharp / flat) ──────────────────────────────────────────────
@@ -453,6 +461,7 @@ class _StaffPainter extends CustomPainter {
     double x,
     double y,
     double alpha,
+    Color clefColor,
   ) {
     if (alter == 0) return;
     _drawText(
@@ -460,7 +469,7 @@ class _StaffPainter extends CustomPainter {
       alter > 0 ? '♯' : '♭',
       Offset(x - _kNRx * 2 - 4, y - _kLS * 0.95),
       fontSize: _kLS * 1.3,
-      color: Colors.black.withValues(alpha: alpha),
+      color: clefColor.withValues(alpha: alpha),
     );
   }
 
@@ -541,6 +550,7 @@ class _StaffPainter extends CustomPainter {
     int pos,
     double alpha,
     Color color,
+    Color clefColor,
   ) {
     if (type == 'whole') return;
 
@@ -554,13 +564,13 @@ class _StaffPainter extends CustomPainter {
       final sx = x + _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y - _kStem), p);
       if (type != 'half') {
-        _drawFlags(canvas, Offset(sx, y - _kStem), true, type, alpha);
+        _drawFlags(canvas, Offset(sx, y - _kStem), true, type, alpha, clefColor);
       }
     } else {
       final sx = x - _kNRx;
       canvas.drawLine(Offset(sx, y), Offset(sx, y + _kStem), p);
       if (type != 'half') {
-        _drawFlags(canvas, Offset(sx, y + _kStem), false, type, alpha);
+        _drawFlags(canvas, Offset(sx, y + _kStem), false, type, alpha, clefColor);
       }
     }
   }
@@ -573,6 +583,7 @@ class _StaffPainter extends CustomPainter {
     bool stemUp,
     String type,
     double alpha,
+    Color clefColor,
   ) {
     final count = switch (type) {
       'eighth' => 1,
@@ -583,7 +594,7 @@ class _StaffPainter extends CustomPainter {
     if (count == 0) return;
 
     final p = Paint()
-      ..color = Colors.black.withValues(alpha: alpha)
+      ..color = clefColor.withValues(alpha: alpha)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -603,9 +614,9 @@ class _StaffPainter extends CustomPainter {
 
   // ── Ledger lines ──────────────────────────────────────────────────────────
 
-  void _drawLedgerLines(Canvas canvas, double x, int pos, double alpha) {
+  void _drawLedgerLines(Canvas canvas, double x, int pos, double alpha, Color clefColor) {
     final p = Paint()
-      ..color = Colors.grey.shade700.withValues(alpha: alpha)
+      ..color = clefColor.withValues(alpha: alpha * 0.7)
       ..strokeWidth = 1.2;
     const hw = _kNRx + 4; // half-width, slightly wider than note head
 
@@ -630,26 +641,26 @@ class _StaffPainter extends CustomPainter {
 
   // ── Augmentation dot ──────────────────────────────────────────────────────
 
-  void _drawDot(Canvas canvas, double x, double y, double alpha) {
+  void _drawDot(Canvas canvas, double x, double y, double alpha, Color clefColor) {
     // Dot sits just to the right of the note head, slightly raised.
     // If the note is on a line, nudge the dot into the space above.
     canvas.drawCircle(
       Offset(x + _kNRx + 4, y - _kLS * 0.25),
       2.0,
-      Paint()..color = Colors.black.withValues(alpha: alpha),
+      Paint()..color = clefColor.withValues(alpha: alpha),
     );
   }
 
   // ── Rest symbols ──────────────────────────────────────────────────────────
 
-  void _drawRest(Canvas canvas, double x, String type) {
+  void _drawRest(Canvas canvas, double x, String type, Color clefColor) {
     switch (type) {
       case 'whole':
         // Whole rest: filled rectangle hanging below the 4th staff line (D5).
         final ly = _posToY(6); // 4th line from bottom
         canvas.drawRect(
           Rect.fromLTWH(x - _kLS * 0.75, ly, _kLS * 1.5, _kLS * 0.55),
-          Paint()..color = Colors.grey.shade700,
+          Paint()..color = clefColor.withValues(alpha: 0.7),
         );
         return;
       case 'half':
@@ -657,7 +668,7 @@ class _StaffPainter extends CustomPainter {
         final ly = _posToY(4) - _kLS * 0.55;
         canvas.drawRect(
           Rect.fromLTWH(x - _kLS * 0.75, ly, _kLS * 1.5, _kLS * 0.55),
-          Paint()..color = Colors.grey.shade700,
+          Paint()..color = clefColor.withValues(alpha: 0.7),
         );
         return;
       default:
@@ -677,7 +688,7 @@ class _StaffPainter extends CustomPainter {
       sym,
       Offset(x - _kLS * 0.7, _posToY(5) - _kLS * 1.0),
       fontSize: _kLS * 2.1,
-      color: Colors.grey.shade700,
+      color: clefColor.withValues(alpha: 0.7),
     );
   }
 
@@ -691,6 +702,7 @@ class _StaffPainter extends CustomPainter {
     int pos,
     Color color,
     double alpha,
+    Color clefColor,
   ) {
     if (!colorProvider.showNoteLabels) return;
     if (!showLetter && !showSolfege) return;
@@ -713,19 +725,19 @@ class _StaffPainter extends CustomPainter {
           Offset(x, labelY),
           fontSize: _kLS * 0.85,
           color: color.withValues(alpha: alpha),
-          outlineColor: Colors.white.withValues(alpha: alpha * 0.8),
+          outlineColor: Theme.of(context).canvasColor.withValues(alpha: alpha * 0.8),
           outlineWidth: 1.8,
           fontWeight: FontWeight.bold,
         );
       } else {
-        // Use black text with white outline
+        // Use theme-aware foreground color for label
         _drawTextWithOutline(
           canvas,
           label,
           Offset(x, labelY),
           fontSize: _kLS * 0.85,
-          color: Colors.black.withValues(alpha: alpha),
-          outlineColor: Colors.white.withValues(alpha: alpha * 0.8),
+          color: clefColor.withValues(alpha: alpha),
+          outlineColor: Theme.of(context).canvasColor.withValues(alpha: alpha * 0.8),
           outlineWidth: 1.8,
           fontWeight: FontWeight.bold,
         );
@@ -876,14 +888,15 @@ class _ColorLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.watch<ColorSchemeProvider>().activeScheme;
-    final showLabels = context.watch<ColorSchemeProvider>().showNoteLabels;
+    final provider = context.watch<ColorSchemeProvider>();
+    final scheme = provider.activeScheme;
+    final showLabels = provider.showNoteLabels;
 
     return Wrap(
       spacing: 6,
       runSpacing: 6,
       children: _naturalNotes.map((note) {
-        final color = scheme.colors[note] ?? Colors.grey;
+        final color = scheme.colorForNote(note, 0, context: context);
         final solfege = MusicConstants.stepToSolfege[note] ?? note;
         final textColor =
             color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;

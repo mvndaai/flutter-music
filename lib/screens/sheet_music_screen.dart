@@ -703,7 +703,12 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     final pos = note.octave * 7 + (diatonic[note.step] ?? 0) - 30;
     final y = topMargin + staffHeight - pos * ls / 2;
 
-    final color = provider.colorForNote(note.step, note.alter, octave: note.octave);
+    final color = provider.colorForNote(
+      note.step,
+      note.alter,
+      octave: note.octave,
+      brightness: Brightness.light,
+    );
     final pdfColor = PdfColor(color.r, color.g, color.b);
 
     // Ledger lines (below staff)
