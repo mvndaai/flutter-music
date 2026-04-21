@@ -58,6 +58,7 @@ class SongProvider extends ChangeNotifier {
     final sampleSongs = [
       'assets/sample_songs/twinkle_twinkle.xml',
       'assets/sample_songs/mary_had_a_little_lamb.xml',
+      'assets/sample_songs/row_row_row_your_boat.xml',
     ];
 
     for (final assetPath in sampleSongs) {
