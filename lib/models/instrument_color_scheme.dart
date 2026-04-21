@@ -134,18 +134,15 @@ class InstrumentColorScheme {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'name': name,
         if (icon != null) 'icon': icon,
         if (emoji != null) 'emoji': emoji,
-        'isBuiltIn': isBuiltIn,
-        if (isImported) 'isImported': isImported,
         'colors': colors.map((k, v) => MapEntry(k, v.toARGB32())),
         if (octaveOverrides.isNotEmpty)
           'octaveOverrides':
               octaveOverrides.map((k, v) => MapEntry(k, v.toARGB32())),
         if (disabledKeys.isNotEmpty) 'disabledKeys': disabledKeys.toList(),
-        if (tuningOverrides.isNotEmpty) 'tuningOverrides': tuningOverrides,
+        // Skipped attributes: id, tuningOverrides, isBuiltIn, isImported
       };
 
   factory InstrumentColorScheme.fromJson(Map<String, dynamic> json, {String? fallbackId}) {
