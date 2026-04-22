@@ -129,8 +129,9 @@ jobs:
           # For version tags use the tag name; for main branch use commit SHA
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', steps.version.outputs.short_sha) }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Latest build ({0})', steps.version.outputs.artifact_tag) }}
-          # Main branch builds are pre-releases but marked as latest for download URL
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          # All builds are non-prereleases so /releases/latest/download/ URL works
+          # (GitHub's /releases/latest endpoint excludes prereleases)
+          prerelease: false
           draft: false
           # Mark main branch builds as latest so /releases/latest/download/ URL works
           # Version tags (e.g. v1.2.3) are not automatically marked as latest
