@@ -137,7 +137,7 @@ jobs:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Latest build ({0})', steps.version.outputs.artifact_tag) }}
           prerelease: true
-          draft: true
+          draft: false
           body: |
             ### Flutter Music – Android build
 
