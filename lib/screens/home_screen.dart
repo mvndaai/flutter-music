@@ -173,14 +173,16 @@ class _SongCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (song.composer.isNotEmpty)
-              Text(song.composer, style: const TextStyle(fontSize: 12)),
+            Text('${song.composer} • ${song.library}', style: const TextStyle(fontSize: 12)),
             if (song.tags.isNotEmpty)
-              Wrap(
-                spacing: 4,
-                children: song.tags
-                    .map((t) => TagChip(tag: t, onTap: () => provider.selectTag(t)))
-                    .toList(),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 4,
+                  children: song.tags
+                      .map((t) => TagChip(tag: t, onTap: () => provider.selectTag(t)))
+                      .toList(),
+                ),
               ),
           ],
         ),
@@ -273,7 +275,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             hasFilter
-                ? 'No songs with this tag'
+                ? 'No songs matching the current filters'
                 : 'No songs yet.\nTap + to add your first song!',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey.shade600, fontSize: 16),

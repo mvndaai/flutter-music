@@ -12,6 +12,7 @@ class MusicXmlParser {
     String content, {
     required String id,
     List<String> tags = const [],
+    String library = 'Default',
     String? localPath,
     String? sourceUrl,
     DateTime? createdAt,
@@ -35,6 +36,7 @@ class MusicXmlParser {
       composer: composer,
       measures: measures,
       tags: tags,
+      library: library,
       localPath: localPath,
       sourceUrl: sourceUrl,
       createdAt: createdAt ?? DateTime.now(),

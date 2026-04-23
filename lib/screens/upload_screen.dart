@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import '../providers/song_provider.dart';
 import '../widgets/tag_chip.dart';
 
@@ -130,7 +131,7 @@ class _UploadScreenState extends State<UploadScreen>
           tabs: const [
             Tab(icon: Icon(Icons.upload_file), text: 'Upload File'),
             Tab(icon: Icon(Icons.cloud_download), text: 'From URL'),
-            Tab(icon: Icon(Icons.library_music), text: 'Library'),
+            Tab(icon: Icon(Icons.library_music), text: 'Libraries'),
           ],
         ),
       ),
@@ -412,17 +413,21 @@ class _UrlTab extends StatelessWidget {
   }
 }
 
-/// A library entry from the musetrainer GitHub repository.
+/// A library entry that can come from assets or a URL.
 class _LibraryEntry {
-  final String name;
-  final String downloadUrl;
+  final String title;
+  final String library;
+  final String? assetPath;
+  final String? url;
 
-  const _LibraryEntry({required this.name, required this.downloadUrl});
+  const _LibraryEntry({
+    required this.title,
+    required this.library,
+    this.assetPath,
+    this.url,
+  });
 
-  /// Human-readable title derived from the filename.
-  String get title => name
-      .replaceAll(RegExp(r'\.(mxl|xml|musicxml)$', caseSensitive: false), '')
-      .replaceAll('_', ' ');
+  String get uniqueId => assetPath ?? url ?? title;
 }
 
 class _LibraryTab extends StatefulWidget {
@@ -436,16 +441,16 @@ class _LibraryTab extends StatefulWidget {
 
 class _LibraryTabState extends State<_LibraryTab>
     with AutomaticKeepAliveClientMixin {
-  static const _apiUrl =
+  static const _githubApiUrl =
       'https://api.github.com/repos/musetrainer/library/contents/scores';
-  static const _rawBase =
+  static const _githubRawBase =
       'https://raw.githubusercontent.com/musetrainer/library/master/scores/';
 
-  List<_LibraryEntry> _entries = [];
-  bool _fetching = false;
-  String? _fetchError;
+  List<_LibraryEntry> _remoteEntries = [];
+  bool _fetchingRemote = false;
+  String? _remoteError;
+  
   final Set<String> _adding = {};
-  final Set<String> _added = {};
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -455,7 +460,7 @@ class _LibraryTabState extends State<_LibraryTab>
   @override
   void initState() {
     super.initState();
-    _loadEntries();
+    _loadRemoteEntries();
   }
 
   @override
@@ -464,13 +469,13 @@ class _LibraryTabState extends State<_LibraryTab>
     super.dispose();
   }
 
-  Future<void> _loadEntries() async {
+  Future<void> _loadRemoteEntries() async {
     setState(() {
-      _fetching = true;
-      _fetchError = null;
+      _fetchingRemote = true;
+      _remoteError = null;
     });
     try {
-      final response = await http.get(Uri.parse(_apiUrl));
+      final response = await http.get(Uri.parse(_githubApiUrl));
       if (response.statusCode != 200) {
         throw Exception('HTTP ${response.statusCode}');
       }
@@ -483,88 +488,123 @@ class _LibraryTabState extends State<_LibraryTab>
                 name.endsWith('.xml') ||
                 name.endsWith('.musicxml');
           })
-          .map((item) => _LibraryEntry(
-                name: item['name'] as String,
-                downloadUrl: Uri.parse(_rawBase).resolve(item['name'] as String).toString(),
-              ))
-          .toList()
-        ..sort((a, b) => a.title.compareTo(b.title));
-      setState(() => _entries = entries);
+          .map((item) {
+            final fileName = item['name'] as String;
+            final title = fileName
+                .replaceAll(RegExp(r'\.(mxl|xml|musicxml)$', caseSensitive: false), '')
+                .replaceAll('_', ' ');
+            return _LibraryEntry(
+              title: title,
+              library: 'musetrainer/library',
+              url: Uri.parse(_githubRawBase).resolve(fileName).toString(),
+            );
+          })
+          .toList();
+      setState(() => _remoteEntries = entries);
     } catch (e) {
-      setState(() => _fetchError = 'Failed to load library: $e');
+      setState(() => _remoteError = 'Failed to load remote library: $e');
     } finally {
-      setState(() => _fetching = false);
+      setState(() => _fetchingRemote = false);
     }
   }
 
   Future<void> _addSong(_LibraryEntry entry) async {
-    setState(() => _adding.add(entry.name));
+    setState(() => _adding.add(entry.uniqueId));
     try {
       final provider = context.read<SongProvider>();
-      final song = await provider.addSongFromUrl(entry.downloadUrl);
-      if (!mounted) return;
-      if (song != null) {
-        setState(() => _added.add(entry.name));
-        widget.onSongAdded(song.title);
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.error ?? 'Failed to add "${entry.title}"'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      String? xmlContent;
+      
+      if (entry.assetPath != null) {
+        xmlContent = await rootBundle.loadString(entry.assetPath!);
+      } else if (entry.url != null) {
+        // addSongFromUrl handles the fetch internally
+        final song = await provider.addSongFromUrl(entry.url!, library: entry.library);
+        if (song != null) {
+           widget.onSongAdded(song.title);
+        }
+        return;
       }
+
+      if (xmlContent != null) {
+        final song = await provider.addSongFromXml(xmlContent, library: entry.library);
+        if (song != null) {
+          widget.onSongAdded(song.title);
+        }
+      }
+    } catch (e) {
+       ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
     } finally {
-      if (mounted) setState(() => _adding.remove(entry.name));
+      if (mounted) setState(() => _adding.remove(entry.uniqueId));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final provider = context.watch<SongProvider>();
 
-    if (_fetching) {
-      return const Center(child: CircularProgressIndicator());
+    // Build unified list from all selected libraries
+    final List<_LibraryEntry> allAvailable = [];
+    
+    // 1. Add bundled songs if selected
+    for (final libName in provider.selectedLibraries) {
+      if (SongProvider.bundledSongs.containsKey(libName)) {
+        for (final songData in SongProvider.bundledSongs[libName]!) {
+          allAvailable.add(_LibraryEntry(
+            title: songData['title']!,
+            library: libName,
+            assetPath: songData['asset'],
+          ));
+        }
+      }
     }
 
-    if (_fetchError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+    // 2. Add remote songs if selected
+    if (provider.selectedLibraries.contains('musetrainer/library')) {
+      allAvailable.addAll(_remoteEntries);
+    }
+
+    // 3. Filter by search
+    final filtered = _searchQuery.isEmpty
+        ? allAvailable
+        : allAvailable
+            .where((e) => e.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList()
+      ..sort((a, b) => a.title.compareTo(b.title));
+
+    return Column(
+      children: [
+        // Library Selectors
+        Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          padding: const EdgeInsets.all(12),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 8),
-              Text(_fetchError!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-                onPressed: _loadEntries,
+              Wrap(
+                spacing: 8,
+                children: provider.currentLibraries.map((lib) {
+                  final isSelected = provider.selectedLibraries.contains(lib);
+                  return FilterChip(
+                    label: Text(lib),
+                    selected: isSelected,
+                    onSelected: (val) => provider.setLibrarySelected(lib, val),
+                  );
+                }).toList(),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    final filtered = _searchQuery.isEmpty
-        ? _entries
-        : _entries
-            .where((e) =>
-                e.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
-
-    return Column(
-      children: [
+        
+        // Search Bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.all(16),
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search songs…',
+              hintText: 'Search all enabled libraries…',
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
               isDense: true,
@@ -581,44 +621,74 @@ class _LibraryTabState extends State<_LibraryTab>
             onChanged: (v) => setState(() => _searchQuery = v),
           ),
         ),
+
+        // List Header / Info
+        if (_fetchingRemote && provider.selectedLibraries.contains('musetrainer/library'))
+          const LinearProgressIndicator(),
+        
+        if (_remoteError != null && provider.selectedLibraries.contains('musetrainer/library'))
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(_remoteError!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          ),
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(
-            '${filtered.length} songs from musetrainer/library',
-            style: Theme.of(context).textTheme.bodySmall,
+          child: Row(
+            children: [
+              Text(
+                '${filtered.length} songs available',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const Spacer(),
+              if (provider.selectedLibraries.contains('musetrainer/library'))
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 16),
+                  onPressed: _loadRemoteEntries,
+                  tooltip: 'Refresh GitHub Library',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
           ),
         ),
+
+        // Unified Results List
         Expanded(
-          child: ListView.builder(
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final entry = filtered[index];
-              final isAdding = _adding.contains(entry.name);
-              final isAdded = _added.contains(entry.name);
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  child: const Icon(Icons.music_note),
+          child: allAvailable.isEmpty
+              ? const Center(child: Text('No libraries enabled'))
+              : ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final entry = filtered[index];
+                    final isAdding = _adding.contains(entry.uniqueId);
+                    
+                    // Check if song is already in local provider
+                    final bool isAlreadyAdded = provider.songs.any((s) => 
+                        s.title == entry.title && s.library == entry.library);
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        child: const Icon(Icons.music_note),
+                      ),
+                      title: Text(entry.title),
+                      subtitle: Text(entry.library),
+                      trailing: isAdding
+                          ? const SizedBox(
+                              width: 24, height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : isAlreadyAdded
+                              ? const Icon(Icons.check_circle, color: Colors.green)
+                              : IconButton(
+                                  icon: const Icon(Icons.add_circle_outline),
+                                  onPressed: () => _addSong(entry),
+                                ),
+                      onTap: isAdding || isAlreadyAdded ? null : () => _addSong(entry),
+                    );
+                  },
                 ),
-                title: Text(entry.title),
-                trailing: isAdding
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : isAdded
-                        ? const Icon(Icons.check_circle, color: Colors.green)
-                        : IconButton(
-                            icon: const Icon(Icons.add_circle_outline),
-                            tooltip: 'Add to library',
-                            onPressed: () => _addSong(entry),
-                          ),
-                onTap: isAdding || isAdded ? null : () => _addSong(entry),
-              );
-            },
-          ),
         ),
       ],
     );

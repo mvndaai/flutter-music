@@ -16,24 +16,54 @@ class SongProvider extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   String _selectedTag = '';
+  Set<String> _selectedLibraries = {'Flutter Music'};
 
   List<Song> get songs => _songs;
   bool get loading => _loading;
   String? get error => _error;
   String get selectedTag => _selectedTag;
+  Set<String> get selectedLibraries => _selectedLibraries;
 
   List<Song> get filteredSongs {
-    if (_selectedTag.isEmpty) return _songs;
-    return _songs.where((s) => s.tags.contains(_selectedTag)).toList();
+    return _songs.where((s) {
+      final matchesTag = _selectedTag.isEmpty || s.tags.contains(_selectedTag);
+      final matchesLibrary = _selectedLibraries.contains(s.library);
+      return matchesTag && matchesLibrary;
+    }).toList();
   }
 
   List<String> get allTags {
     final tags = <String>{};
     for (final song in _songs) {
-      tags.addAll(song.tags);
+      if (_selectedLibraries.contains(song.library)) {
+        tags.addAll(song.tags);
+      }
     }
     return tags.toList()..sort();
   }
+
+  /// Returns all libraries currently in the user's collection.
+  List<String> get currentLibraries {
+    final libs = <String>{};
+    for (final song in _songs) {
+      libs.add(song.library);
+    }
+    // These are the known "available" libraries.
+    libs.add('Flutter Music');
+    libs.add('musetrainer/library');
+    return libs.toList()..sort();
+  }
+
+  /// Metadata for bundled songs available in the app.
+  static const Map<String, List<Map<String, dynamic>>> bundledSongs = {
+    'Flutter Music': [
+      {'title': 'Twinkle Twinkle Little Star', 'asset': 'assets/sample_songs/twinkle_twinkle.xml', 'tags': []},
+      {'title': 'Mary Had a Little Lamb', 'asset': 'assets/sample_songs/mary_had_a_little_lamb.xml', 'tags': []},
+      {'title': 'Row Row Row Your Boat', 'asset': 'assets/sample_songs/row_row_row_your_boat.xml', 'tags': []},
+      {'title': 'Concerning Hobbits', 'asset': 'assets/sample_songs/concerning_hobbits.xml', 'tags': ['Movie']},
+      {'title': 'Formatting', 'asset': 'assets/sample_songs/formatting.xml', 'tags': ['Testing']},
+    ],
+  };
 
   Future<void> loadSongs() async {
     _loading = true;
@@ -55,23 +85,20 @@ class SongProvider extends ChangeNotifier {
 
   /// Loads sample songs from the assets folder into the library.
   Future<void> _loadSampleSongs() async {
-    final sampleSongs = [
-      'assets/sample_songs/twinkle_twinkle.xml',
-      'assets/sample_songs/mary_had_a_little_lamb.xml',
-      'assets/sample_songs/row_row_row_your_boat.xml',
-      'assets/sample_songs/concerning_hobbits.xml',
-      'assets/sample_songs/formatting.xml',
-    ];
-
-    for (final assetPath in sampleSongs) {
-      try {
-        final xmlContent = await rootBundle.loadString(assetPath);
-        await addSongFromXml(
-          xmlContent,
-          tags: ['Sample', 'Kids Songs'],
-        );
-      } catch (e) {
-        debugPrint('Failed to load sample song $assetPath: $e');
+    for (final entry in bundledSongs.entries) {
+      final libraryName = entry.key;
+      for (final songData in entry.value) {
+        try {
+          final assetPath = songData['asset'] as String;
+          final xmlContent = await rootBundle.loadString(assetPath);
+          await addSongFromXml(
+            xmlContent,
+            tags: List<String>.from(songData['tags'] as List),
+            library: libraryName,
+          );
+        } catch (e) {
+          debugPrint('Failed to load sample song: $e');
+        }
       }
     }
   }
@@ -81,10 +108,22 @@ class SongProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setLibrarySelected(String library, bool selected) {
+    if (selected) {
+      _selectedLibraries.add(library);
+    } else {
+      if (_selectedLibraries.length > 1) {
+        _selectedLibraries.remove(library);
+      }
+    }
+    notifyListeners();
+  }
+
   /// Adds a song from raw MusicXML content.
   Future<Song?> addSongFromXml(
     String xmlContent, {
     List<String> tags = const [],
+    String library = 'Default',
     String? sourceUrl,
   }) async {
     try {
@@ -93,6 +132,7 @@ class SongProvider extends ChangeNotifier {
         xmlContent,
         id: id,
         tags: tags,
+        library: library,
         sourceUrl: sourceUrl,
       );
       await _storage.saveSong(song, xmlContent: xmlContent);
@@ -107,17 +147,16 @@ class SongProvider extends ChangeNotifier {
   }
 
   /// Downloads and adds a song from a URL.
-  Future<Song?> addSongFromUrl(String url, {List<String> tags = const []}) async {
+  Future<Song?> addSongFromUrl(String url, {List<String> tags = const [], String library = 'Default'}) async {
     _loading = true;
     _error = null;
     notifyListeners();
     try {
-      // Convert gs:// URLs to https://
       final resolvedUrl = CloudService.isGcsUrl(url) && url.startsWith('gs://')
           ? CloudService.gsToHttps(url)
           : url;
       final xmlContent = await _cloud.fetchXml(resolvedUrl);
-      return await addSongFromXml(xmlContent, tags: tags, sourceUrl: url);
+      return await addSongFromXml(xmlContent, tags: tags, library: library, sourceUrl: url);
     } catch (e) {
       _error = 'Failed to download song: $e';
       return null;
@@ -148,6 +187,7 @@ class SongProvider extends ChangeNotifier {
         xmlContent,
         id: meta.id,
         tags: meta.tags,
+        library: meta.library,
         localPath: meta.localPath,
         sourceUrl: meta.sourceUrl,
         createdAt: meta.createdAt,
