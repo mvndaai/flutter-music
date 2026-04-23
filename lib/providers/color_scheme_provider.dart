@@ -230,7 +230,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     );
     _customSchemes.add(scheme);
     await _persistCustom();
-    notifyListeners();
+    await setActive(scheme.id);
     return scheme;
   }
 
@@ -245,7 +245,7 @@ class ColorSchemeProvider extends ChangeNotifier {
   Future<void> deleteCustom(String id) async {
     _customSchemes.removeWhere((s) => s.id == id);
     if (_activeId == id) {
-      _activeId = 'builtin_rainbow';
+      await setActive('builtin_rainbow');
     }
     await _persistCustom();
     notifyListeners();
@@ -260,7 +260,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     );
     _customSchemes.add(cloned);
     await _persistCustom();
-    notifyListeners();
+    await setActive(cloned.id);
   }
 
   Future<void> _persistCustom() async {
@@ -279,6 +279,8 @@ class ColorSchemeProvider extends ChangeNotifier {
       _customSchemes.add(imported);
     }
     await _persistCustom();
+    await setActive(scheme.id);
+    // If it was already active, we still notify because content might have changed.
     notifyListeners();
   }
 }
