@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/song_provider.dart';
@@ -13,6 +11,7 @@ import 'upload_screen.dart';
 import 'share_screen.dart';
 import 'music_editor_screen.dart';
 import '../music_kit/utils/music_xml_generator.dart';
+import '../utils/file_saver.dart';
 
 /// Home screen showing the song library with tag-based filtering.
 class HomeScreen extends StatefulWidget {
@@ -376,20 +375,7 @@ class _SongCard extends StatelessWidget {
   }
 
   void _downloadXml(String title, String xml) {
-    if (kIsWeb) {
-      final bytes = utf8.encode(xml);
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', '${title.replaceAll(' ', '_')}.musicxml')
-        ..click();
-      html.Url.revokeObjectUrl(url);
-    } else {
-      // For mobile/desktop, we would ideally use share_plus, but for now
-      // we can inform the user or use path_provider to save to documents.
-      // Since the user is likely on web (given the GitHub URL error),
-      // we focus on that.
-    }
+    saveFile(title: title, content: xml);
   }
 
   Future<void> _editTags(BuildContext context, Song song) async {
