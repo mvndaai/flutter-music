@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:developer' as developer;
 import 'package:web/web.dart' as web;
-import 'tone_player_stub.dart';
+import 'package:drift/drift.dart';
+import 'package:drift/web.dart';
+import '../platform_stub.dart';
 
-/// Web implementation using Web Audio API through JS interop
+/// Web implementation using Web Audio API and package:web.
 class WebTonePlayer implements PlatformTonePlayer {
   web.AudioContext? _audioContext;
 
@@ -55,3 +59,28 @@ class WebTonePlayer implements PlatformTonePlayer {
 }
 
 PlatformTonePlayer createPlatformPlayer() => WebTonePlayer();
+
+/// Web implementation for downloading a file using package:web.
+Future<void> saveFile({required String title, required String content}) async {
+  final bytes = utf8.encode(content);
+  final blob = web.Blob(
+    [bytes.toJS].toJS,
+    web.BlobPropertyBag(type: 'application/xml'),
+  );
+  
+  final url = web.URL.createObjectURL(blob);
+  final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+  anchor.href = url;
+  anchor.setAttribute('download', '${title.replaceAll(' ', '_')}.musicxml');
+  
+  web.document.body!.append(anchor);
+  anchor.click();
+  anchor.remove();
+  
+  web.URL.revokeObjectURL(url);
+}
+
+/// Opens a web-based database connection.
+QueryExecutor openDatabaseConnection() {
+  return WebDatabase('app_db', logStatements: false);
+}
