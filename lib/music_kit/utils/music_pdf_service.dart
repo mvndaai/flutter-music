@@ -339,19 +339,29 @@ class MusicPdfService {
         ),
       );
 
-      final displayNotes = measure.notes.where((n) => !n.isChordContinuation).toList();
-      final noteTotalDuration = displayNotes.isEmpty
-          ? 1.0
-          : displayNotes.fold(0.0, (sum, n) => sum + n.duration);
+      final displayNotes =
+          measure.notes.where((n) => !n.isChordContinuation).toList();
+      
+      final bool hasTimeSig = (currentPrevMeasure == null || 
+          measure.beats != currentPrevMeasure.beats || 
+          measure.beatType != currentPrevMeasure.beatType);
 
-      const leftPadding = 20.0;
-      const rightPadding = 20.0;
-      final contentWidth = (measureWidth - leftPadding - rightPadding).clamp(0.0, measureWidth);
+      final double tsReserved = hasTimeSig ? 24.0 : 0.0;
+      final double contentWidth = (measureWidth - tsReserved - 10.0).clamp(0.0, measureWidth);
+      
+      final double durationToBeats = measure.beatType / 4.0;
+      final double beatsInMeasure = measure.beats > 0 ? measure.beats.toDouble() : 1.0;
+      final double totalNoteDurationBeats = displayNotes.fold(0.0, (sum, n) => sum + n.duration) * durationToBeats;
+      final double effectiveBeats = (totalNoteDurationBeats > beatsInMeasure) ? totalNoteDurationBeats : beatsInMeasure;
+      final double beatW = contentWidth / effectiveBeats;
+
+      final noteHeadWidth = ls * 1.56; // Matching kNRx * 2 / kLS ratio
 
       double cumulativeDuration = 0.0;
       for (int ni = 0; ni < displayNotes.length; ni++) {
         final note = displayNotes[ni];
-        final noteX = x + leftPadding + ((cumulativeDuration + note.duration / 2) / noteTotalDuration) * contentWidth;
+        final double beatIndex = cumulativeDuration * durationToBeats;
+        final noteX = x + tsReserved + (beatIndex + 0.5) * beatW + 5.0;
 
         if (!note.isRest) {
           bool isBeamed = false;
@@ -359,18 +369,21 @@ class MusicPdfService {
             if (note.beam == 'begin' || note.beam == 'continue') {
               int nextNi = ni + 1;
               MusicNote? nextNote;
+              double nextNoteOffset = note.duration;
               while (nextNi < displayNotes.length) {
                 final candidate = displayNotes[nextNi];
                 if (!candidate.isRest) {
                   nextNote = candidate;
                   break;
                 }
+                nextNoteOffset += candidate.duration;
                 nextNi++;
               }
 
               if (nextNote != null && (nextNote.beam == 'continue' || nextNote.beam == 'end')) {
                 isBeamed = true;
-                final nextX = x + leftPadding + ((cumulativeDuration + note.duration + nextNote.duration / 2) / noteTotalDuration) * contentWidth;
+                final double nextBeatIndex = (cumulativeDuration + nextNoteOffset) * durationToBeats;
+                final nextX = x + tsReserved + (nextBeatIndex + 0.5) * beatW + 5.0;
 
                 final pos = staffPos(note.step, note.octave);
                 final nextPos = staffPos(nextNote.step, nextNote.octave);
@@ -407,7 +420,6 @@ class MusicPdfService {
                 );
                 final pdfColor = PdfColor(color.r, color.g, color.b);
 
-                const noteHeadWidth = 8.0;
                 final beamStartX = noteX + (stemUp ? noteHeadWidth / 2 - 0.6 : -noteHeadWidth / 2 + 0.6);
                 final beamEndX = nextX + (stemUp ? noteHeadWidth / 2 - 0.6 : -noteHeadWidth / 2 + 0.6);
 
@@ -551,6 +563,9 @@ class MusicPdfService {
     );
     final pdfColor = PdfColor(color.r, color.g, color.b);
 
+    final noteHeadWidth = ls * 1.56;
+    final noteHeadHeight = ls * 0.88;
+
     // Ledger lines
     if (pos < 0) {
       final lowest = pos.isEven ? pos : pos + 1;
@@ -558,10 +573,10 @@ class MusicPdfService {
         final ly = topMargin + staffHeight - lp * ls / 2;
         widgets.add(
           pw.Positioned(
-            left: x - 6,
+            left: x - noteHeadWidth * 0.7,
             top: ly - 0.3,
             child: pw.Container(
-              width: 12,
+              width: noteHeadWidth * 1.4,
               height: 0.6,
               color: PdfColors.grey700,
             ),
@@ -576,10 +591,10 @@ class MusicPdfService {
         final ly = topMargin + staffHeight - lp * ls / 2;
         widgets.add(
           pw.Positioned(
-            left: x - 6,
+            left: x - noteHeadWidth * 0.7,
             top: ly - 0.3,
             child: pw.Container(
-              width: 12,
+              width: noteHeadWidth * 1.4,
               height: 0.6,
               color: PdfColors.grey700,
             ),
@@ -591,12 +606,12 @@ class MusicPdfService {
     if (note.alter != 0) {
       widgets.add(
         pw.Positioned(
-          left: x - 18,
-          top: y - 8,
+          left: x - noteHeadWidth * 1.2,
+          top: y - ls * 0.8,
           child: pw.Text(
             note.alter > 0 ? '\u{266F}' : '\u{266D}',
-            style: const pw.TextStyle(
-              fontSize: 16,
+            style: pw.TextStyle(
+              fontSize: ls * 1.6,
               color: PdfColors.black,
             ),
           ),
@@ -604,8 +619,6 @@ class MusicPdfService {
       );
     }
 
-    const noteHeadWidth = 8.0;
-    const noteHeadHeight = 5.0;
     final filled = note.type != 'whole' && note.type != 'half';
 
     widgets.add(
