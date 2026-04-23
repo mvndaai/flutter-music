@@ -7,6 +7,7 @@ import '../providers/color_scheme_provider.dart';
 import '../services/tone_player.dart';
 import '../music_kit/utils/music_pdf_service.dart';
 import '../widgets/sheet_music_widget.dart';
+import '../widgets/note_settings_sheet.dart';
 import 'practice_screen.dart';
 import 'color_schemes_screen.dart';
 
@@ -145,209 +146,20 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
   }
 
   void _openSettings() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
-            ),
-            child: Consumer<ColorSchemeProvider>(
-              builder: (context, provider, _) => SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Handle bar
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'Settings',
-                      style: Theme.of(sheetCtx).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const Divider(height: 24),
-
-                  // Letters toggle
-                  SwitchListTile(
-                    title: const Text('Letters'),
-                    subtitle: const Text('Show letter names on notes (A, B, C…)'),
-                    value: provider.showLetter,
-                    onChanged: (v) => provider.setShowLetter(v),
-                  ),
-
-                  // Solfège toggle
-                  SwitchListTile(
-                    title: const Text('Solfège'),
-                    subtitle:
-                        const Text('Show solfège names on notes (Do, Re, Mi…)'),
-                    value: provider.showSolfege,
-                    onChanged: (v) => provider.setShowSolfege(v),
-                  ),
-
-                  // Labels below toggle
-                  SwitchListTile(
-                    title: const Text('Labels Below Notes'),
-                    subtitle:
-                        const Text('Show labels under notes instead of inside'),
-                    value: provider.labelsBelow,
-                    onChanged: (v) => provider.setLabelsBelow(v),
-                  ),
-
-                  // Colored labels toggle
-                  SwitchListTile(
-                    title: const Text('Colored Labels'),
-                    subtitle:
-                        const Text('Match label color to note color'),
-                    value: provider.coloredLabels,
-                    onChanged: (v) => provider.setColoredLabels(v),
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Tempo/Speed control
-                  ListTile(
-                    title: const Text('Tempo'),
-                    subtitle: Text('${_tempo.round()} BPM'),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Slider(
-                      value: _tempo,
-                      min: 40,
-                      max: 240,
-                      divisions: 40,
-                      label: '${_tempo.round()} BPM',
-                      onChanged: (v) {
-                        setSheetState(() => _tempo = v);
-                        setState(() => _tempo = v);
-                        // Restart metronome if running
-                        if (_tonePlayer.isMetronomeRunning) {
-                          final provider = context.read<ColorSchemeProvider>();
-                          _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
-                        }
-                      },
-                    ),
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Metronome Sound
-                  ListTile(
-                    title: const Text('Metronome Sound'),
-                    trailing: DropdownButton<String>(
-                      value: provider.metronomeSound,
-                      underline: const SizedBox.shrink(),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'tick',
-                          child: Text('Tick'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'beep',
-                          child: Text('Beep'),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) {
-                          provider.setMetronomeSound(v);
-                          // Restart metronome if running to apply change
-                          if (_tonePlayer.isMetronomeRunning) {
-                            _tonePlayer.startMetronome(_tempo, sound: v);
-                          }
-                        }
-                      },
-                    ),
-                  ),
-
-                  const Divider(height: 24),
-                  ListTile(
-                    title: const Text('Measures per row'),
-                    trailing: DropdownButton<int>(
-                      value: provider.measuresPerRow,
-                      underline: const SizedBox.shrink(),
-                      items: [2, 3, 4, 6]
-                          .map(
-                            (v) => DropdownMenuItem(
-                              value: v,
-                              child: Text('$v'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          provider.setMeasuresPerRow(v);
-                        }
-                      },
-                    ),
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Theme
-                  ListTile(
-                    title: const Text('Theme'),
-                    trailing: DropdownButton<ThemeMode>(
-                      value: provider.themeMode,
-                      underline: const SizedBox.shrink(),
-                      items: const [
-                        DropdownMenuItem(
-                          value: ThemeMode.system,
-                          child: Text('System'),
-                        ),
-                        DropdownMenuItem(
-                          value: ThemeMode.light,
-                          child: Text('Light'),
-                        ),
-                        DropdownMenuItem(
-                          value: ThemeMode.dark,
-                          child: Text('Dark'),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) {
-                          provider.setThemeMode(v);
-                        }
-                      },
-                    ),
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Print
-                  ListTile(
-                    leading: const Icon(Icons.print),
-                    title: const Text('Print'),
-                    subtitle: const Text('Generate a PDF of this song'),
-                    onTap: () {
-                      Navigator.pop(sheetCtx);
-                      _printSong();
-                    },
-                  ),
-                ],
-              ),
-              ),
-            ),
-          );
-        },
-      ),
+    NoteSettingsSheet.show(
+      context,
+      tempo: _tempo,
+      onTempoChanged: (v) {
+        setState(() => _tempo = v);
+        // Restart metronome if running
+        if (_tonePlayer.isMetronomeRunning) {
+          final provider = context.read<ColorSchemeProvider>();
+          _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
+        }
+      },
+      onPrint: _printSong,
+      showTempo: true,
+      showPrint: true,
     );
   }
 

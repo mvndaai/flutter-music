@@ -7,6 +7,8 @@ import '../providers/color_scheme_provider.dart';
 import '../services/audio_service.dart';
 import '../music_kit/utils/music_constants.dart';
 import '../widgets/sheet_music_widget.dart';
+import '../music_kit/utils/note_resolver.dart';
+import '../widgets/note_settings_sheet.dart';
 import 'color_schemes_screen.dart';
 
 /// Practice screen: displays sheet music and listens to the microphone.
@@ -90,60 +92,10 @@ class _PracticeScreenState extends State<PracticeScreen>
     final specificNote = current.letterName; // e.g. "C5"
 
     // Resolve target note name with enharmonic and octave-fallback support
-    String resolveTarget() {
-      // 1. Exact match (e.g. "C5")
-      if (activeScheme.tuningOverrides.containsKey(specificNote)) {
-        return activeScheme.tuningOverrides[specificNote]!;
-      }
-
-      // 2. Exact match on base step (e.g. "C")
-      if (activeScheme.tuningOverrides.containsKey(current.step)) {
-        return activeScheme.tuningOverrides[current.step]!;
-      }
-
-      // 3. Enharmonic match (e.g. Db -> C#)
-      final enharmonicStep = current.alter == 1
-          ? '${current.step}#'
-          : (current.alter == -1 ? '${current.step}b' : current.step);
-
-      final mappingKeys = [
-        enharmonicStep,
-        enharmonicStep.replaceAll('Db', 'C#').replaceAll('Eb', 'D#').replaceAll('Gb', 'F#').replaceAll('Ab', 'G#').replaceAll('Bb', 'A#'),
-        '$enharmonicStep${current.octave}',
-        '$enharmonicStep${current.octave}'.replaceAll('Db', 'C#').replaceAll('Eb', 'D#').replaceAll('Gb', 'F#').replaceAll('Ab', 'G#').replaceAll('Bb', 'A#'),
-      ];
-
-      for (final key in mappingKeys) {
-        if (activeScheme.tuningOverrides.containsKey(key)) {
-          return activeScheme.tuningOverrides[key]!;
-        }
-      }
-
-      // 4. Fallback to octave 4 mapping if available (common for simple instruments)
-      final base4 = '${current.step}4';
-      final enhBase4 = base4
-          .replaceAll('Db', 'C#')
-          .replaceAll('Eb', 'D#')
-          .replaceAll('Gb', 'F#')
-          .replaceAll('Ab', 'G#')
-          .replaceAll('Bb', 'A#');
-
-      final mapped4 = activeScheme.tuningOverrides[base4] ??
-          activeScheme.tuningOverrides[enhBase4];
-      if (mapped4 != null) {
-        // Apply the same interval shift to the current note's octave
-        final originalMidi4 = MusicConstants.noteNameToMidi(enhBase4);
-        final mappedMidi4 = MusicConstants.noteNameToMidi(mapped4);
-        if (originalMidi4 > 0 && mappedMidi4 > 0) {
-          final shift = mappedMidi4 - originalMidi4;
-          return MusicConstants.midiToNoteName(current.midiNumber + shift);
-        }
-      }
-
-      return specificNote;
-    }
-
-    final targetNoteName = resolveTarget();
+    final targetNoteName = NoteResolver.resolveTargetNote(
+      note: current,
+      activeScheme: activeScheme,
+    );
 
     // Check if the detected note matches the target note (within tolerance).
     final detectedMidi = MusicConstants.noteNameToMidi(detectedNoteName);
@@ -209,101 +161,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   }
 
   void _openSettings() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetCtx) => Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 12,
-          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
-        ),
-        child: Consumer<ColorSchemeProvider>(
-          builder: (context, provider, _) => SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Text(
-                  'Settings',
-                  style: Theme.of(sheetCtx).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const Divider(height: 24),
-                SwitchListTile(
-                  title: const Text('Letters'),
-                  subtitle: const Text('Show letter names on notes (A, B, C…)'),
-                  value: provider.showLetter,
-                  onChanged: (v) => provider.setShowLetter(v),
-                ),
-                SwitchListTile(
-                  title: const Text('Solfège'),
-                  subtitle: const Text('Show solfège names on notes (Do, Re, Mi…)'),
-                  value: provider.showSolfege,
-                  onChanged: (v) => provider.setShowSolfege(v),
-                ),
-                SwitchListTile(
-                  title: const Text('Labels Below Notes'),
-                  subtitle: const Text('Show labels under notes instead of inside'),
-                  value: provider.labelsBelow,
-                  onChanged: (v) => provider.setLabelsBelow(v),
-                ),
-                SwitchListTile(
-                  title: const Text('Colored Labels'),
-                  subtitle: const Text('Match label color to note color'),
-                  value: provider.coloredLabels,
-                  onChanged: (v) => provider.setColoredLabels(v),
-                ),
-                const Divider(height: 24),
-                ListTile(
-                  title: const Text('Instrument'),
-                  subtitle: Text(provider.activeScheme.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.pop(sheetCtx);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
-                    );
-                  },
-                ),
-                const Divider(height: 24),
-                ListTile(
-                  title: const Text('Theme'),
-                  trailing: DropdownButton<ThemeMode>(
-                    value: provider.themeMode,
-                    underline: const SizedBox.shrink(),
-                    items: const [
-                      DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
-                      DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-                      DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) provider.setThemeMode(v);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    NoteSettingsSheet.show(context);
   }
 
   @override
