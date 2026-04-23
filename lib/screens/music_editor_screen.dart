@@ -81,6 +81,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
       setState(() {
         _historyIndex--;
         _song = _history[_historyIndex];
+        _selectedMeasureIndex = _selectedMeasureIndex.clamp(0, _song.measures.length - 1);
       });
     }
   }
@@ -90,6 +91,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
       setState(() {
         _historyIndex++;
         _song = _history[_historyIndex];
+        _selectedMeasureIndex = _selectedMeasureIndex.clamp(0, _song.measures.length - 1);
       });
     }
   }
@@ -169,7 +171,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
       final notes = List<MusicNote>.from(m.notes)..add(note);
       measures[_selectedMeasureIndex] = m.copyWith(notes: notes);
-      _song = _song.copyWith(measures: _fillRests(measures));
+      _song = _song.copyWith(measures: measures);
       _saveToHistory();
     });
   }
@@ -185,7 +187,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
         measures.removeAt(_selectedMeasureIndex);
         _selectedMeasureIndex--;
       }
-      _song = _song.copyWith(measures: _fillRests(measures));
+      _song = _song.copyWith(measures: measures);
       _saveToHistory();
     });
   }
@@ -438,6 +440,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   }
 
   int _getGhostNoteGlobalIndex() {
+    if (_selectedMeasureIndex >= _song.measures.length) return 0;
     int idx = 0;
     for (int i = 0; i < _selectedMeasureIndex; i++) {
       idx += _song.measures[i].playableNotes.length;
@@ -559,7 +562,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
             setState(() {
               final measures = List<Measure>.from(_song.measures);
               measures[_selectedMeasureIndex] = m.copyWith(beats: v);
-              _song = _song.copyWith(measures: _fillRests(measures));
+              _song = _song.copyWith(measures: measures);
               _saveToHistory();
             });
           },
@@ -574,7 +577,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
             setState(() {
               final measures = List<Measure>.from(_song.measures);
               measures[_selectedMeasureIndex] = m.copyWith(beatType: v);
-              _song = _song.copyWith(measures: _fillRests(measures));
+              _song = _song.copyWith(measures: measures);
               _saveToHistory();
             });
           },
