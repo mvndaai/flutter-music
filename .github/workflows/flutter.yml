@@ -1,0 +1,170 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'android/**'
+      - 'web/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - 'analysis_options.yaml'
+      - '.github/workflows/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Unit Tests ──────────────────────────────────────────────────────────
+  # Run tests first. If these fail, the builds won't start.
+  test:
+    name: "Testing: Unit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+  # ── 2. Android Build ───────────────────────────────────────────────────────
+  # Runs in parallel with Web Build after tests pass.
+  build-android:
+    name: "Build: Android"
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Build release App Bundle
+        run: flutter build appbundle --release
+
+      - name: Collect version info
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "artifact_tag=${VERSION}+${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Rename build outputs
+        env:
+          TAG: ${{ steps.version.outputs.artifact_tag }}
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/flutter-music-${TAG}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/flutter-music.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "dist/flutter-music-${TAG}.aab"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-music-apk-${{ steps.version.outputs.artifact_tag }}
+          path: dist/flutter-music-${{ steps.version.outputs.artifact_tag }}.apk
+          retention-days: 90
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-music-aab-${{ steps.version.outputs.artifact_tag }}
+          path: dist/flutter-music-${{ steps.version.outputs.artifact_tag }}.aab
+          retention-days: 90
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', steps.version.outputs.short_sha) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Latest build ({0})', steps.version.outputs.artifact_tag) }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          make_latest: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          body: |
+            ### Flutter Music – Android build
+            Built on branch `${{ github.ref_name }}` at `${{ github.sha }}`.
+          files: |
+            dist/flutter-music.apk
+            dist/flutter-music-${{ steps.version.outputs.artifact_tag }}.apk
+            dist/flutter-music-${{ steps.version.outputs.artifact_tag }}.aab
+
+  # ── 3. Web Build ───────────────────────────────────────────────────────────
+  # Runs in parallel with Android Build after tests pass.
+  build-web:
+    name: "Build: Web"
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web
+        run: flutter build web --release --base-href /${{ github.event.repository.name }}/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  # ── 4. Web Deploy ──────────────────────────────────────────────────────────
+  # Only runs after Web Build succeeds.
+  deploy-web:
+    name: "Deploy: Web"
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
