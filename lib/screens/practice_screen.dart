@@ -31,6 +31,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   String _detectedNote = '';
   String? _statusMessage;
   StreamSubscription<String>? _noteSubscription;
+  Timer? _clearNoteTimer;
 
   List<MusicNote> get _notes => widget.song.allNotes;
 
@@ -40,6 +41,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   @override
   void dispose() {
     _noteSubscription?.cancel();
+    _clearNoteTimer?.cancel();
     _audio.dispose();
     super.dispose();
   }
@@ -81,7 +83,19 @@ class _PracticeScreenState extends State<PracticeScreen>
 
   void _onNoteDetected(String detectedNoteName) {
     if (!mounted) return;
-    setState(() => _detectedNote = detectedNoteName);
+
+    if (detectedNoteName.isNotEmpty) {
+      _clearNoteTimer?.cancel();
+      setState(() => _detectedNote = detectedNoteName);
+    } else {
+      // Keep the last heard note visible for 2 seconds before clearing
+      _clearNoteTimer?.cancel();
+      _clearNoteTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() => _detectedNote = '');
+        }
+      });
+    }
 
     final current = _currentNote;
     if (current == null || detectedNoteName.isEmpty) return;
@@ -205,11 +219,7 @@ class _PracticeScreenState extends State<PracticeScreen>
                   Expanded(
                     child: Text(
                       _statusMessage ??
-                          (_micActive
-                              ? (_detectedNote.isNotEmpty
-                                  ? 'Hearing: $_detectedNote'
-                                  : 'Listening…')
-                              : 'Tap 🎙 to start practice'),
+                          (_micActive ? 'Listening…' : 'Tap 🎙 to start practice'),
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
@@ -231,6 +241,11 @@ class _PracticeScreenState extends State<PracticeScreen>
                 showSolfege: provider.showSolfege,
                 noteIndex: _currentNoteIndex,
                 total: _notes.length,
+                detectedNote: _detectedNote,
+                targetNoteName: NoteResolver.resolveTargetNote(
+                  note: current,
+                  activeScheme: provider.activeScheme,
+                ),
               ),
 
             const Divider(height: 1),
@@ -268,45 +283,104 @@ class _CurrentNoteCard extends StatelessWidget {
   final bool showSolfege;
   final int noteIndex;
   final int total;
+  final String detectedNote;
+  final String targetNoteName;
 
   const _CurrentNoteCard({
     required this.note,
     required this.showSolfege,
     required this.noteIndex,
     required this.total,
+    required this.detectedNote,
+    required this.targetNoteName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isCorrect = detectedNote.isNotEmpty &&
+        (MusicConstants.noteNameToMidi(detectedNote) -
+                    MusicConstants.noteNameToMidi(targetNoteName))
+                .abs() <=
+            1;
+
+    final solfege = MusicConstants.stepToSolfege[note.step] ?? note.step;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       color: Theme.of(context).colorScheme.surface,
       child: Row(
         children: [
-          Text(
-            'Play now:',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            showSolfege ? note.solfegeName : note.letterName,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Play now:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '(${MusicConstants.stepToSolfege[note.step] ?? note.step})',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade500,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      showSolfege ? note.solfegeName : note.letterName,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '($solfege)${targetNoteName != note.letterName ? " (Tuned $targetNoteName)" : ""}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
+          if (detectedNote.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isCorrect
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isCorrect ? Colors.green : Colors.orange,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Hearing',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isCorrect ? Colors.green.shade700 : Colors.orange.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    detectedNote,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isCorrect ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

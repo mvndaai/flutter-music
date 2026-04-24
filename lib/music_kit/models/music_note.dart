@@ -81,4 +81,30 @@ class MusicNote {
 
   @override
   String toString() => 'MusicNote($letterName, $type)';
+
+  MusicNote copyWith({
+    String? step,
+    int? octave,
+    double? alter,
+    double? duration,
+    String? type,
+    bool? isRest,
+    bool? isChordContinuation,
+    int? dot,
+    String? beam,
+    bool? isTied,
+  }) {
+    return MusicNote(
+      step: step ?? this.step,
+      octave: octave ?? this.octave,
+      alter: alter ?? this.alter,
+      duration: duration ?? this.duration,
+      type: type ?? this.type,
+      isRest: isRest ?? this.isRest,
+      isChordContinuation: isChordContinuation ?? this.isChordContinuation,
+      dot: dot ?? this.dot,
+      beam: beam ?? this.beam,
+      isTied: isTied ?? this.isTied,
+    );
+  }
 }

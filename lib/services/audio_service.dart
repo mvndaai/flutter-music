@@ -16,7 +16,7 @@ class AudioService {
 
   static const int _sampleRate = 44100;
   static const int _chunkSize = 4096; // ~93ms at 44100 Hz
-  static const double _volumeThreshold = 0.005; // Slightly higher threshold to ignore background chatter
+  static const double _volumeThreshold = 0.002; // Lowered for better sensitivity
 
   // State for stable note detection
   String _currentStableNote = '';
@@ -24,8 +24,8 @@ class AudioService {
   int _candidateCount = 0;
   int _silenceCount = 0;
   
-  static const int _requiredStability = 2; // ~186ms
-  static const int _maxSilence = 4; // ~372ms
+  static const int _requiredStability = 1; // Reduced to improve responsiveness
+  static const int _maxSilence = 3; // Clear faster when sound stops
 
   bool get isListening => _isListening;
 
@@ -154,12 +154,12 @@ class AudioService {
     }
 
     // 4. Harmonic Product Spectrum (HPS)
-    // We multiply the spectrum by its downsampled versions (2x and 3x).
-    // This dramatically suppresses background noise and voices that don't have strong harmonics.
-    final hpsSize = magnitudes.length ~/ 3;
+    // We multiply the spectrum by its downsampled versions.
+    // Using 2 harmonics (1x and 2x) is often more robust for a variety of instruments.
+    final hpsSize = magnitudes.length ~/ 2;
     final hps = Float64List(hpsSize);
     for (int i = 0; i < hpsSize; i++) {
-      hps[i] = magnitudes[i] * magnitudes[i * 2] * magnitudes[i * 3];
+      hps[i] = magnitudes[i] * magnitudes[i * 2];
     }
 
     // 5. Find Peak in HPS

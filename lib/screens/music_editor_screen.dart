@@ -208,31 +208,74 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
     ));
   }
 
+  String _getNoteType(double duration) {
+    String closestType = 'quarter';
+    double minDiff = double.infinity;
+    for (var entry in MusicConstants.typeToDuration.entries) {
+      final diff = (entry.value - duration).abs();
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestType = entry.key;
+      }
+    }
+    return closestType;
+  }
+
   void _addNote(MusicNote note) {
     setState(() {
-      final measures = List<Measure>.from(_song.measures);
-      final m = measures[_selectedMeasureIndex];
-      
-      final double actualCapacity = m.beats * (4.0 / m.beatType);
-      double currentDuration = m.notes.fold(0.0, (sum, n) => sum + n.duration);
-      
-      if (currentDuration + note.duration > actualCapacity) {
-        // Move to next measure or create one
-        if (_selectedMeasureIndex < measures.length - 1) {
-          _selectedMeasureIndex++;
-          _addNote(note);
-        } else {
-          _addMeasure();
-          _addNote(note);
-        }
-        return;
-      }
-
-      final notes = List<MusicNote>.from(m.notes)..add(note);
-      measures[_selectedMeasureIndex] = m.copyWith(notes: notes);
-      _song = _song.copyWith(measures: measures);
+      _addNoteInternal(note);
       _saveToHistory();
     });
+  }
+
+  void _addNoteInternal(MusicNote note) {
+    final m = _song.measures[_selectedMeasureIndex];
+    final double actualCapacity = m.beats * (4.0 / m.beatType);
+    final double currentDuration = m.notes.fold(0.0, (sum, n) => sum + n.duration);
+    final double remainingSpace = actualCapacity - currentDuration;
+
+    if (note.duration > remainingSpace + 0.001) {
+      if (remainingSpace > 0.125) {
+        // Fill remaining space and split
+        final firstPart = note.copyWith(
+          duration: remainingSpace,
+          type: _getNoteType(remainingSpace),
+          dot: 0, // Split parts don't inherit dots directly
+          isTied: true,
+        );
+        _appendNoteToCurrentMeasure(firstPart);
+
+        final restOfNote = note.copyWith(
+          duration: note.duration - remainingSpace,
+          type: _getNoteType(note.duration - remainingSpace),
+          dot: 0,
+        );
+        _moveToNextMeasure();
+        _addNoteInternal(restOfNote);
+      } else {
+        // Not enough space, move to next measure
+        _moveToNextMeasure();
+        _addNoteInternal(note);
+      }
+    } else {
+      _appendNoteToCurrentMeasure(note);
+    }
+  }
+
+  void _appendNoteToCurrentMeasure(MusicNote note) {
+    final measures = List<Measure>.from(_song.measures);
+    final m = measures[_selectedMeasureIndex];
+    final notes = List<MusicNote>.from(m.notes)..add(note);
+    measures[_selectedMeasureIndex] = m.copyWith(notes: notes);
+    _song = _song.copyWith(measures: measures);
+  }
+
+  void _moveToNextMeasure() {
+    if (_selectedMeasureIndex < _song.measures.length - 1) {
+      _selectedMeasureIndex++;
+    } else {
+      _addMeasureInternal();
+    }
   }
 
   void _deleteLastNote() {
@@ -378,17 +421,22 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
   void _addMeasure() {
     setState(() {
-      final measures = List<Measure>.from(_song.measures);
-      final last = measures.last;
-      measures.add(Measure(
-        number: last.number + 1,
-        notes: [],
-        beats: last.beats,
-        beatType: last.beatType,
-      ));
-      _song = _song.copyWith(measures: measures);
-      _selectedMeasureIndex = measures.length - 1;
+      _addMeasureInternal();
+      _saveToHistory();
     });
+  }
+
+  void _addMeasureInternal() {
+    final measures = List<Measure>.from(_song.measures);
+    final last = measures.last;
+    final newMeasure = Measure(
+      number: last.number + 1,
+      notes: [],
+      beats: last.beats,
+      beatType: last.beatType,
+    );
+    _song = _song.copyWith(measures: [...measures, newMeasure]);
+    _selectedMeasureIndex = _song.measures.length - 1;
   }
 
   Future<void> _save() async {

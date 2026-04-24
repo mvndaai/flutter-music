@@ -367,7 +367,7 @@ class StaffPainter extends CustomPainter {
   }
 
   void _drawNoteHead(Canvas canvas, String type, double x, double y, Color color, double alpha, bool isActive) {
-    final filled = type != 'whole' && type != 'half';
+    final filled = type != 'whole' && type != 'half' && type != 'breve';
     final rect = Rect.fromCenter(center: Offset(x, y), width: kNRx * 2, height: kNRy * 2);
 
     if (isActive) {
@@ -377,6 +377,19 @@ class StaffPainter extends CustomPainter {
           ..color = color.withValues(alpha: 0.35)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
       );
+    }
+
+    if (type == 'breve') {
+      final p = Paint()
+        ..color = color.withValues(alpha: alpha)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawOval(rect, Paint()..color = color.withValues(alpha: alpha * 0.15));
+      canvas.drawOval(rect, p);
+      // Breve vertical bars
+      canvas.drawLine(Offset(x - kNRx - 2, y - kNRy), Offset(x - kNRx - 2, y + kNRy), p);
+      canvas.drawLine(Offset(x + kNRx + 2, y - kNRy), Offset(x + kNRx + 2, y + kNRy), p);
+      return;
     }
 
     canvas.save();
@@ -421,7 +434,7 @@ class StaffPainter extends CustomPainter {
     bool noFlags = false,
     double? stemTipY,
   }) {
-    if (type == 'whole') return;
+    if (type == 'whole' || type == 'breve') return;
     final stemUp = forcedStemUp ?? (pos < 5);
     final p = Paint()
       ..color = color.withValues(alpha: alpha)
@@ -495,6 +508,11 @@ class StaffPainter extends CustomPainter {
     final hasDot = note != null && note.dot > 0;
 
     switch (type) {
+      case 'breve':
+        final ly = posToY(5) - kLS * 0.5;
+        canvas.drawRect(Rect.fromLTWH(x - kLS * 0.4, ly, kLS * 0.8, kLS * 1.0), Paint()..color = color);
+        if (hasDot) _drawDot(canvas, x + kLS * 0.5, ly + kLS * 0.5, alpha, color);
+        return;
       case 'whole':
         final ly = posToY(6);
         canvas.drawRect(Rect.fromLTWH(x - kLS * 0.75, ly, kLS * 1.5, kLS * 0.55), Paint()..color = color);
@@ -530,7 +548,7 @@ class StaffPainter extends CustomPainter {
     if (!showLetter && !showSolfege) return;
     final raw = note.letterName.replaceAll(RegExp(r'\d'), '');
     final label = showSolfege ? note.solfegeName : raw;
-    final filled = note.type != 'whole' && note.type != 'half';
+    final filled = note.type != 'whole' && note.type != 'half' && note.type != 'breve';
 
     if (labelsBelow) {
       final stemUp = pos < 5;
