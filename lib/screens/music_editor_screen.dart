@@ -11,7 +11,6 @@ import '../services/musicxml_parser.dart';
 import '../providers/song_provider.dart';
 import '../providers/color_scheme_provider.dart';
 import 'color_schemes_screen.dart';
-import 'color_schemes_screen.dart';
 import '../widgets/note_settings_sheet.dart';
 import '../widgets/sheet_music_widget.dart';
 import '../services/audio_service.dart';
@@ -89,6 +88,9 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
   final List<Song> _history = [];
   int _historyIndex = -1;
+  int _lastSavedHistoryIndex = -1;
+
+  bool get _hasUnsavedChanges => _historyIndex != _lastSavedHistoryIndex;
 
   @override
   void initState() {
@@ -110,6 +112,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
       );
     }
     _saveToHistory();
+    _lastSavedHistoryIndex = _historyIndex;
   }
 
   void _saveToHistory() {
@@ -118,7 +121,10 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
       _history.removeRange(_historyIndex + 1, _history.length);
     }
     _history.add(_song);
-    if (_history.length > 50) _history.removeAt(0);
+    if (_history.length > 50) {
+      _history.removeAt(0);
+      _lastSavedHistoryIndex--;
+    }
     _historyIndex = _history.length - 1;
   }
 
@@ -461,9 +467,9 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
     } else {
       await provider.updateSongXml(id, xml);
     }
-    
-    // SongProvider automatically notifies listeners on add/update
-    
+
+    _lastSavedHistoryIndex = _historyIndex;
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Song saved successfully')),
@@ -559,9 +565,40 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
     );
   }
 
+  Future<bool> _showBackConfirmationDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Unsaved Changes'),
+            content: const Text('You have unsaved changes. Do you want to discard them and leave?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Stay'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Discard'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _showBackConfirmationDialog();
+        if (shouldPop && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: KeyboardListener(
       focusNode: FocusNode()..requestFocus(),
       onKeyEvent: (event) {
         if (event is KeyDownEvent) {
@@ -646,8 +683,9 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _changePitch(int delta) {
     const steps = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
