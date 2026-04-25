@@ -93,10 +93,8 @@ class SongProvider extends ChangeNotifier {
     try {
       _songs = await _storage.getAllSongs();
       _invalidateCache();
-      // Load sample songs on first run (empty library)
-      if (_songs.isEmpty) {
-        await _loadSampleSongs(onlyDefaults: true);
-      }
+      // Ensure all default bundled songs are present in the library
+      await _loadSampleSongs(onlyDefaults: true);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -105,12 +103,16 @@ class SongProvider extends ChangeNotifier {
     }
   }
 
-  /// Loads sample songs from the assets folder into the library.
+  /// Loads sample songs from the assets folder into the library if they are missing.
   Future<void> _loadSampleSongs({bool onlyDefaults = false}) async {
     for (final entry in bundledSongs.entries) {
       final libraryName = entry.key;
       for (final songData in entry.value) {
         if (onlyDefaults && songData['isDefault'] != true) continue;
+
+        final title = songData['title'] as String;
+        final alreadyExists = _songs.any((s) => s.title == title && s.library == libraryName);
+        if (alreadyExists) continue;
 
         try {
           final assetPath = songData['asset'] as String;
