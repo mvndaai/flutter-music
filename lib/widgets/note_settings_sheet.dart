@@ -61,6 +61,7 @@ class NoteSettingsSheet extends StatelessWidget {
           ),
           child: Consumer<ColorSchemeProvider>(
             builder: (context, provider, _) => SingleChildScrollView(
+              primary: true,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,

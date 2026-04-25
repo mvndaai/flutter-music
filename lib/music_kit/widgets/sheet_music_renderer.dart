@@ -138,30 +138,33 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
       _rowKeys.add(GlobalKey());
     }
 
-    return SingleChildScrollView(
+    return Scrollbar(
       controller: _scrollController,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.header != null) widget.header!,
-          ...List.generate(rows.length, (i) {
-            final row = rows[i];
-            return _StaffRow(
-              key: _rowKeys[i],
-              row: row,
-              activeNoteIndex: widget.activeNoteIndex,
-              ghostNoteIndex: widget.ghostNoteIndex,
-              ghostNote: widget.ghostNote,
-              showSolfege: widget.showSolfege,
-              showLetter: widget.showLetter,
-              labelsBelow: widget.labelsBelow,
-              coloredLabels: widget.coloredLabels,
-              colorScheme: widget.colorScheme,
-              showNoteLabels: widget.showNoteLabels,
-            );
-          }),
-        ],
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.header != null) widget.header!,
+            ...List.generate(rows.length, (i) {
+              final row = rows[i];
+              return _StaffRow(
+                key: _rowKeys[i],
+                row: row,
+                activeNoteIndex: widget.activeNoteIndex,
+                ghostNoteIndex: widget.ghostNoteIndex,
+                ghostNote: widget.ghostNote,
+                showSolfege: widget.showSolfege,
+                showLetter: widget.showLetter,
+                labelsBelow: widget.labelsBelow,
+                coloredLabels: widget.coloredLabels,
+                colorScheme: widget.colorScheme,
+                showNoteLabels: widget.showNoteLabels,
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

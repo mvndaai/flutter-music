@@ -184,6 +184,7 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
     final hasNote = _liveNote.isNotEmpty;
 
     return SingleChildScrollView(
+      primary: true,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -448,6 +449,7 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
         // ── Color palette ──────────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
+            primary: true,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Wrap(
               spacing: 8,

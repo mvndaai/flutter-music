@@ -21,6 +21,7 @@ class ShareScreen extends StatelessWidget {
         title: const Text('Get the App'),
       ),
       body: SingleChildScrollView(
+        primary: true,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

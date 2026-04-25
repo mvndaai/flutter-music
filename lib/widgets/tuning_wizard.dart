@@ -148,6 +148,7 @@ class _TuningWizardScreenState extends State<_TuningWizardScreen> {
           LinearProgressIndicator(value: progress),
           Expanded(
             child: SingleChildScrollView(
+              primary: true,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

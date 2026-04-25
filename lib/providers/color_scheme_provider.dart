@@ -227,6 +227,7 @@ class ColorSchemeProvider extends ChangeNotifier {
       emoji: emoji,
       colors: Map.from(base.colors),
       octaveOverrides: Map.from(base.octaveOverrides),
+      keyboardOverrides: Map.from(base.keyboardOverrides),
     );
     _customSchemes.add(scheme);
     await _persistCustom();

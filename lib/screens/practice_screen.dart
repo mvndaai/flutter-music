@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../music_kit/models/song.dart';
 import '../music_kit/models/music_note.dart';
+import '../music_kit/models/instrument_color_scheme.dart';
 import '../providers/color_scheme_provider.dart';
 import '../services/audio_service.dart';
 import '../music_kit/utils/music_constants.dart';
@@ -186,8 +188,54 @@ class _PracticeScreenState extends State<PracticeScreen>
         : (_currentNoteIndex / _notes.length).clamp(0.0, 1.0);
 
     return Consumer<ColorSchemeProvider>(
-      builder: (context, provider, _) => Scaffold(
-        appBar: AppBar(
+      builder: (context, provider, _) => Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+          final activeScheme = provider.activeScheme;
+          final overrides = activeScheme.keyboardOverrides.isNotEmpty
+              ? activeScheme.keyboardOverrides
+              : InstrumentColorScheme.black.keyboardOverrides;
+
+          final physicalKeyName =
+              event.physicalKey.debugName?.replaceAll(' ', '') ?? '';
+
+          final isShift = HardwareKeyboard.instance.isShiftPressed;
+          final isCaps = HardwareKeyboard.instance.isCapsLockOn;
+
+          // Helper to find note by exact mapping string
+          String? findNote(String mapping) {
+            for (final entry in overrides.entries) {
+              if (entry.value == mapping) return entry.key;
+            }
+            return null;
+          }
+
+          String? noteName;
+          if (isShift) {
+            noteName = findNote('Shift+$physicalKeyName');
+          } else if (isCaps) {
+            noteName = findNote('CapsLock+$physicalKeyName');
+          }
+
+          // Fallback to plain key if no modifier mapping found or no modifier active
+          noteName ??= findNote(physicalKeyName);
+
+          if (noteName != null) {
+            _onNoteDetected(noteName);
+            return KeyEventResult.handled;
+          }
+
+          if (event.logicalKey == LogicalKeyboardKey.space) {
+            _toggleMic();
+            return KeyEventResult.handled;
+          }
+
+          return KeyEventResult.ignored;
+        },
+        child: Scaffold(
+          appBar: AppBar(
           title: Text('Practice: ${widget.song.title}'),
           actions: [
             IconButton(
@@ -246,6 +294,9 @@ class _PracticeScreenState extends State<PracticeScreen>
                   note: current,
                   activeScheme: provider.activeScheme,
                 ),
+                keyboardOverrides: provider.activeScheme.keyboardOverrides.isNotEmpty
+                    ? provider.activeScheme.keyboardOverrides
+                    : InstrumentColorScheme.black.keyboardOverrides,
               ),
 
             const Divider(height: 1),
@@ -273,8 +324,9 @@ class _PracticeScreenState extends State<PracticeScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 /// Shows the current note in a large, prominent card.
@@ -285,6 +337,7 @@ class _CurrentNoteCard extends StatelessWidget {
   final int total;
   final String detectedNote;
   final String targetNoteName;
+  final Map<String, String> keyboardOverrides;
 
   const _CurrentNoteCard({
     required this.note,
@@ -293,6 +346,7 @@ class _CurrentNoteCard extends StatelessWidget {
     required this.total,
     required this.detectedNote,
     required this.targetNoteName,
+    required this.keyboardOverrides,
   });
 
   @override
@@ -304,6 +358,11 @@ class _CurrentNoteCard extends StatelessWidget {
             1;
 
     final solfege = MusicConstants.stepToSolfege[note.step] ?? note.step;
+    final keyboardHint = keyboardOverrides[targetNoteName];
+    final cleanHint = keyboardHint
+        ?.replaceAll('Key', '')
+        .replaceAll('Shift+', '⇧')
+        .replaceAll('CapsLock+', '⇪');
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -342,6 +401,25 @@ class _CurrentNoteCard extends StatelessWidget {
                         color: Colors.grey.shade500,
                       ),
                     ),
+                    if (cleanHint != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: Text(
+                          cleanHint,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

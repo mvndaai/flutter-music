@@ -326,6 +326,7 @@ class _FileUploadTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      primary: true,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -407,6 +408,7 @@ class _UrlTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      primary: true,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -701,6 +703,7 @@ class _LibraryTabState extends State<_LibraryTab>
           child: allAvailable.isEmpty
               ? const Center(child: Text('No libraries enabled'))
               : ListView.builder(
+                  primary: true,
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final entry = filtered[index];

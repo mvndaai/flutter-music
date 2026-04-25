@@ -41,6 +41,10 @@ class InstrumentColorScheme {
   /// E.g. `{'C5': 'B4'}` means when the app expects C5, it should listen for B4.
   final Map<String, String> tuningOverrides;
 
+  /// Optional keyboard overrides, mapping a note name to a physical key name.
+  /// E.g. `{'C4': 'KeyA'}`.
+  final Map<String, String> keyboardOverrides;
+
   const InstrumentColorScheme({
     required this.id,
     required this.name,
@@ -52,6 +56,7 @@ class InstrumentColorScheme {
     this.octaveOverrides = const {},
     this.disabledKeys = const {},
     this.tuningOverrides = const {},
+    this.keyboardOverrides = const {},
   });
 
   /// Returns the color for a note given its [step] (C–B), [alter] (-1/0/+1),
@@ -116,6 +121,7 @@ class InstrumentColorScheme {
     Map<String, Color>? octaveOverrides,
     Set<String>? disabledKeys,
     Map<String, String>? tuningOverrides,
+    Map<String, String>? keyboardOverrides,
     bool? isBuiltIn,
     bool? isImported,
   }) {
@@ -134,6 +140,7 @@ class InstrumentColorScheme {
       octaveOverrides: octaveOverrides ?? Map.from(this.octaveOverrides),
       disabledKeys: disabledKeys ?? Set.from(this.disabledKeys),
       tuningOverrides: tuningOverrides ?? Map.from(this.tuningOverrides),
+      keyboardOverrides: keyboardOverrides ?? Map.from(this.keyboardOverrides),
     );
   }
 
@@ -150,6 +157,7 @@ class InstrumentColorScheme {
       octaveOverrides: octaveOverrides,
       disabledKeys: disabledKeys,
       tuningOverrides: tuningOverrides,
+      keyboardOverrides: keyboardOverrides,
     );
   }
 
@@ -162,6 +170,7 @@ class InstrumentColorScheme {
           'octaveOverrides':
               octaveOverrides.map((k, v) => MapEntry(k, v.toARGB32())),
         if (disabledKeys.isNotEmpty) 'disabledKeys': disabledKeys.toList(),
+        if (keyboardOverrides.isNotEmpty) 'keyboardOverrides': keyboardOverrides,
         // Skipped attributes: id, tuningOverrides, isBuiltIn, isImported
       };
 
@@ -171,6 +180,7 @@ class InstrumentColorScheme {
         json['octaveOverrides'] as Map<String, dynamic>? ?? {};
     final rawDisabled = json['disabledKeys'] as List<dynamic>? ?? [];
     final rawTuning = json['tuningOverrides'] as Map<String, dynamic>? ?? {};
+    final rawKeyboard = json['keyboardOverrides'] as Map<String, dynamic>? ?? {};
     return InstrumentColorScheme(
       id: (json['id'] as String?) ?? fallbackId ?? const Uuid().v7(),
       name: json['name'] as String,
@@ -183,6 +193,7 @@ class InstrumentColorScheme {
           rawOverrides.map((k, v) => MapEntry(k, Color(v as int))),
       disabledKeys: rawDisabled.cast<String>().toSet(),
       tuningOverrides: rawTuning.cast<String, String>(),
+      keyboardOverrides: rawKeyboard.cast<String, String>(),
     );
   }
 
@@ -192,5 +203,32 @@ class InstrumentColorScheme {
     emoji: '🎹',
     isBuiltIn: true,
     colors: {},
+    keyboardOverrides: {
+      'C4': 'KeyA',
+      'C#4': 'KeyW',
+      'D4': 'KeyS',
+      'D#4': 'KeyE',
+      'E4': 'KeyD',
+      'F4': 'KeyF',
+      'F#4': 'KeyT',
+      'G4': 'KeyG',
+      'G#4': 'KeyY',
+      'A4': 'KeyH',
+      'A#4': 'KeyU',
+      'B4': 'KeyJ',
+      'C5': 'Shift+KeyA',
+      'C#5': 'Shift+KeyW',
+      'D5': 'Shift+KeyS',
+      'D#5': 'Shift+KeyE',
+      'E5': 'Shift+KeyD',
+      'F5': 'Shift+KeyF',
+      'F#5': 'Shift+KeyT',
+      'G5': 'Shift+KeyG',
+      'G#5': 'Shift+KeyY',
+      'A5': 'Shift+KeyH',
+      'A#5': 'Shift+KeyU',
+      'B5': 'Shift+KeyJ',
+      'C6': 'Shift+KeyK',
+    },
   );
 }

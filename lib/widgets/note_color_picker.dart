@@ -118,6 +118,7 @@ class _NoteColorPickerDialogState extends State<_NoteColorPickerDialog> {
             // Color grid
             Flexible(
               child: SingleChildScrollView(
+                primary: true,
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,

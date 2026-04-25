@@ -376,6 +376,7 @@ class _NameIconEmojiDialogState extends State<_NameIconEmojiDialog> {
                   child: Scrollbar(
                     thumbVisibility: true,
                     child: SingleChildScrollView(
+                      primary: true,
                       padding: const EdgeInsets.all(8),
                       child: Wrap(
                         spacing: 8,
