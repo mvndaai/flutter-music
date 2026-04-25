@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/color_scheme_provider.dart';
+import '../providers/instrument_provider.dart';
 import '../music_kit/widgets/sheet_music_renderer.dart';
 import '../music_kit/models/song.dart';
 import '../music_kit/models/music_note.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
+import '../music_kit/models/instrument_profile.dart';
 import '../music_kit/utils/music_constants.dart';
 
-/// App-specific wrapper around [SheetMusicRenderer] that connects it to [ColorSchemeProvider].
+/// App-specific wrapper around [SheetMusicRenderer] that connects it to [InstrumentProvider].
 class SheetMusicWidget extends StatelessWidget {
   final Song song;
   final int activeNoteIndex;
@@ -36,11 +36,11 @@ class SheetMusicWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cp = context.watch<ColorSchemeProvider>();
+    final ip = context.watch<InstrumentProvider>();
 
     return SheetMusicRenderer(
       song: song,
-      colorScheme: cp.activeScheme,
+      instrument: ip.activeScheme,
       activeNoteIndex: activeNoteIndex,
       ghostNoteIndex: ghostNoteIndex,
       ghostNote: ghostNote,
@@ -49,7 +49,7 @@ class SheetMusicWidget extends StatelessWidget {
       labelsBelow: labelsBelow,
       coloredLabels: coloredLabels,
       measuresPerRow: measuresPerRow,
-      showNoteLabels: cp.showNoteLabels,
+      showNoteLabels: ip.showNoteLabels,
       includePickupInFirstRow: includePickupInFirstRow,
       header: _ColorLegend(showSolfege: showSolfege),
     );
@@ -62,7 +62,7 @@ class _ColorLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ColorSchemeProvider>();
+    final provider = context.watch<InstrumentProvider>();
     final scheme = provider.activeScheme;
     final showLabels = provider.showNoteLabels;
 

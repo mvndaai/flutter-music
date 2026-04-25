@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
+import '../music_kit/models/instrument_profile.dart';
 
 /// Manages the active instrument color scheme and the global note-label setting.
-class ColorSchemeProvider extends ChangeNotifier {
+class InstrumentProvider extends ChangeNotifier {
   static const String _activeIdKey = 'color_scheme_active_id';
   static const String _customSchemesKey = 'color_scheme_custom';
   static const String _showLabelsKey = 'color_scheme_show_labels';
@@ -22,8 +22,8 @@ class ColorSchemeProvider extends ChangeNotifier {
   final Uuid _uuid = const Uuid();
 
   String _activeId = 'builtin_rainbow'; // Default to rainbow on first install
-  List<InstrumentColorScheme> _customSchemes = [];
-  List<InstrumentColorScheme> _builtInSchemes = [InstrumentColorScheme.black];
+  List<InstrumentProfile> _customSchemes = [];
+  List<InstrumentProfile> _builtInSchemes = [InstrumentProfile.black];
 
   bool _showNoteLabels = true;
   bool _showLetter = true;
@@ -44,17 +44,17 @@ class ColorSchemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   String get metronomeSound => _metronomeSound;
 
-  List<InstrumentColorScheme> get allSchemes => [
+  List<InstrumentProfile> get allSchemes => [
         ..._builtInSchemes,
         ..._customSchemes,
       ];
 
-  InstrumentColorScheme get activeScheme =>
+  InstrumentProfile get activeScheme =>
       allSchemes.firstWhere(
         (s) => s.id == _activeId,
         orElse: () => allSchemes.firstWhere(
           (s) => s.id == 'builtin_rainbow',
-          orElse: () => InstrumentColorScheme.black,
+          orElse: () => InstrumentProfile.black,
         ),
       );
 
@@ -86,7 +86,7 @@ class ColorSchemeProvider extends ChangeNotifier {
         final list = jsonDecode(raw) as List<dynamic>;
         _customSchemes = list
             .map((e) =>
-                InstrumentColorScheme.fromJson(e as Map<String, dynamic>))
+                InstrumentProfile.fromJson(e as Map<String, dynamic>))
             .toList();
       } catch (_) {
         _customSchemes = [];
@@ -99,11 +99,11 @@ class ColorSchemeProvider extends ChangeNotifier {
     try {
       final content = await rootBundle.loadString('assets/instruments/defaults.json');
       final List<dynamic> list = jsonDecode(content);
-      _builtInSchemes = list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)).toList();
+      _builtInSchemes = list.map((e) => InstrumentProfile.fromJson(e as Map<String, dynamic>)).toList();
       
       // Ensure "Standard" is always there if missing from JSON
-      if (!_builtInSchemes.any((s) => s.id == InstrumentColorScheme.black.id)) {
-        _builtInSchemes.insert(0, InstrumentColorScheme.black);
+      if (!_builtInSchemes.any((s) => s.id == InstrumentProfile.black.id)) {
+        _builtInSchemes.insert(0, InstrumentProfile.black);
       }
 
       // Apply persisted overrides for built-in schemes
@@ -121,16 +121,16 @@ class ColorSchemeProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error loading defaults: $e');
-      _builtInSchemes = [InstrumentColorScheme.black];
+      _builtInSchemes = [InstrumentProfile.black];
     }
   }
 
   /// Loads the library for searching. This is NOT stored in the provider's main list.
-  Future<List<InstrumentColorScheme>> loadLibrary() async {
+  Future<List<InstrumentProfile>> loadLibrary() async {
     try {
       final content = await rootBundle.loadString('assets/instruments/library.json');
       final List<dynamic> list = jsonDecode(content);
-      return list.map((e) => InstrumentColorScheme.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((e) => InstrumentProfile.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
       debugPrint('Error loading library: $e');
       return [];
@@ -233,9 +233,9 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setString(_metronomeSoundKey, sound);
   }
 
-  Future<InstrumentColorScheme> createCustom({String? name, String? icon, String? emoji}) async {
+  Future<InstrumentProfile> createCustom({String? name, String? icon, String? emoji}) async {
     final base = activeScheme;
-    final scheme = InstrumentColorScheme(
+    final scheme = InstrumentProfile(
       id: _uuid.v7(),
       name: name ?? 'Custom ${_customSchemes.length + 1}',
       icon: icon,
@@ -250,7 +250,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     return scheme;
   }
 
-  Future<void> updateCustom(InstrumentColorScheme updated) async {
+  Future<void> updateCustom(InstrumentProfile updated) async {
     final idx = _customSchemes.indexWhere((s) => s.id == updated.id);
     if (idx < 0) return;
     _customSchemes[idx] = updated;
@@ -293,7 +293,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> cloneScheme(InstrumentColorScheme scheme) async {
+  Future<void> cloneScheme(InstrumentProfile scheme) async {
     final cloned = scheme.copyWith(
       id: _uuid.v7(),
       name: '${scheme.name} (Copy)',
@@ -311,7 +311,7 @@ class ColorSchemeProvider extends ChangeNotifier {
     await prefs.setString(_customSchemesKey, encoded);
   }
 
-  Future<void> importScheme(InstrumentColorScheme scheme) async {
+  Future<void> importScheme(InstrumentProfile scheme) async {
     // If it's already in custom schemes, update it; otherwise add it.
     final index = _customSchemes.indexWhere((s) => s.id == scheme.id);
     final imported = scheme.copyWith(isImported: true, isBuiltIn: false);

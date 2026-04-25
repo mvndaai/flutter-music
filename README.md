@@ -38,29 +38,41 @@ flutter build web          # Web
 ```
 lib/
 ├── main.dart                  # App entry point
-├── models/
-│   ├── music_note.dart        # Note data model (pitch, duration, type)
-│   ├── measure.dart           # Measure (bar) data model
-│   └── song.dart              # Song data model + JSON serialization
+├── music_kit/                 # Core music rendering & logic
+│   ├── models/
+│   │   ├── music_note.dart
+│   │   ├── measure.dart
+│   │   ├── song.dart
+│   │   └── instrument_profile.dart
+│   ├── widgets/
+│   │   ├── note_renderer.dart
+│   │   ├── sheet_music_renderer.dart
+│   │   └── staff_painter.dart
+│   └── utils/
+│       ├── music_constants.dart
+│       └── note_resolver.dart
 ├── services/
 │   ├── musicxml_parser.dart   # MusicXML → Song parser
 │   ├── storage_service.dart   # SharedPreferences-based local storage
-│   ├── cloud_service.dart     # HTTP fetcher for GCS / public URLs
-│   └── audio_service.dart     # Microphone capture + FFT pitch detection
+│   └── pitch_detection_service.dart # Microphone capture + FFT pitch detection
 ├── providers/
-│   └── song_provider.dart     # ChangeNotifier state management
+│   ├── song_provider.dart     # Songs state management
+│   └── instrument_provider.dart # Active instrument state management
 ├── screens/
 │   ├── home_screen.dart       # Song library + tag filtering
 │   ├── sheet_music_screen.dart# Full sheet music display
-│   ├── upload_screen.dart     # File upload & URL download
-│   └── practice_screen.dart  # Practice mode with microphone
+│   ├── practice_screen.dart   # Practice mode with microphone/keyboard
+│   ├── instruments_screen.dart # Instrument list & selection
+│   ├── instrument_editor_screen.dart # Edit instrument details
+│   └── keyboard_config_screen.dart # Configure key-to-note mappings
 ├── widgets/
-│   ├── note_widget.dart       # Color circle for a single note
-│   ├── sheet_music_widget.dart# Full scrollable sheet music view
-│   └── tag_chip.dart          # Tag chip + tag editor dialog
+│   ├── note_widget.dart       # App-connected note circle
+│   ├── sheet_music_widget.dart# App-connected sheet music view
+│   └── instrument_setup/      # Multi-step setup wizards
+│       ├── add_key_wizard.dart
+│       └── tuning_wizard.dart
 └── utils/
-    ├── note_colors.dart       # Xylophone color palette
-    └── music_constants.dart   # MIDI / frequency helpers
+    └── note_colors.dart       # Default color palette
 ```
 
 ## Sample Song

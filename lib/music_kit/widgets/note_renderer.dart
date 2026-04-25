@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/music_note.dart';
-import '../models/instrument_color_scheme.dart';
+import '../models/instrument_profile.dart';
 import '../utils/note_colors.dart';
 
 /// Regex used to strip octave digits from letter names.
@@ -10,7 +10,7 @@ final _octaveDigits = RegExp(r'\d');
 /// Decoupled from app providers.
 class NoteRenderer extends StatelessWidget {
   final MusicNote note;
-  final InstrumentColorScheme colorScheme;
+  final InstrumentProfile instrument;
   final bool showNoteLabels;
   final bool isActive; 
   final bool isPast; 
@@ -21,7 +21,7 @@ class NoteRenderer extends StatelessWidget {
   const NoteRenderer({
     super.key,
     required this.note,
-    required this.colorScheme,
+    required this.instrument,
     this.showNoteLabels = true,
     this.isActive = false,
     this.isPast = false,
@@ -34,7 +34,7 @@ class NoteRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (note.isRest) return _buildRest();
 
-    final color = colorScheme.colorForNote(
+    final color = instrument.colorForNote(
       note.step,
       note.alter,
       octave: note.octave,

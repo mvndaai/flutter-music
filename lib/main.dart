@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/song_provider.dart';
-import 'providers/color_scheme_provider.dart';
+import 'providers/instrument_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/database.dart';
 import 'services/storage_service.dart';
@@ -12,26 +12,26 @@ void main() async {
   final database = AppDatabase();
   final storageService = StorageService(db: database);
   
-  final colorSchemeProvider = ColorSchemeProvider();
-  await colorSchemeProvider.load(); // Wait for preferences before starting app
+  final instrumentProvider = InstrumentProvider();
+  await instrumentProvider.load(); // Wait for preferences before starting app
 
   runApp(FlutterMusicApp(
     database: database,
     storageService: storageService,
-    colorSchemeProvider: colorSchemeProvider,
+    instrumentProvider: instrumentProvider,
   ));
 }
 
 class FlutterMusicApp extends StatelessWidget {
   final AppDatabase database;
   final StorageService storageService;
-  final ColorSchemeProvider colorSchemeProvider;
+  final InstrumentProvider instrumentProvider;
 
   const FlutterMusicApp({
     super.key,
     required this.database,
     required this.storageService,
-    required this.colorSchemeProvider,
+    required this.instrumentProvider,
   });
 
   @override
@@ -42,15 +42,15 @@ class FlutterMusicApp extends StatelessWidget {
           create: (_) => SongProvider(storage: storageService),
         ),
         ChangeNotifierProvider.value(
-          value: colorSchemeProvider,
+          value: instrumentProvider,
         ),
       ],
-      child: Consumer<ColorSchemeProvider>(
-        builder: (context, colorProvider, _) {
+      child: Consumer<InstrumentProvider>(
+        builder: (context, provider, _) {
           return MaterialApp(
             title: 'Flutter Music',
             debugShowCheckedModeBanner: false,
-            themeMode: colorProvider.themeMode,
+            themeMode: provider.themeMode,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xFF1565C0),

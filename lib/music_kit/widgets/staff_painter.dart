@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/music_note.dart';
 import '../models/measure.dart';
-import '../models/instrument_color_scheme.dart';
+import '../models/instrument_profile.dart';
 import '../sheet_music_constants.dart';
 import '../utils/note_colors.dart';
 import '../utils/music_constants.dart';
@@ -35,7 +35,7 @@ class StaffPainter extends CustomPainter {
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
-  final InstrumentColorScheme colorScheme;
+  final InstrumentProfile instrument;
   final bool showNoteLabels;
   final BuildContext context;
 
@@ -48,7 +48,7 @@ class StaffPainter extends CustomPainter {
     required this.showLetter,
     required this.labelsBelow,
     required this.coloredLabels,
-    required this.colorScheme,
+    required this.instrument,
     required this.showNoteLabels,
     required this.context,
   });
@@ -64,7 +64,7 @@ class StaffPainter extends CustomPainter {
       old.coloredLabels != coloredLabels ||
       old.context != context ||
       old.row != row ||
-      old.colorScheme != colorScheme ||
+      old.instrument != instrument ||
       old.showNoteLabels != showNoteLabels;
 
   @override
@@ -292,7 +292,7 @@ class StaffPainter extends CustomPainter {
                 stemTipY: stemTipY
               );
 
-              final noteColor = colorScheme.colorForNote(
+              final noteColor = instrument.colorForNote(
                 note.step,
                 note.alter,
                 octave: note.octave,
@@ -352,7 +352,7 @@ class StaffPainter extends CustomPainter {
   }) {
     final pos = staffPos(note.step, note.octave);
     final y = posToY(pos);
-    final color = colorScheme.colorForNote(
+    final color = instrument.colorForNote(
       note.step,
       note.alter,
       octave: note.octave,

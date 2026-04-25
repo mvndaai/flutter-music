@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/color_scheme_provider.dart';
-import '../screens/color_schemes_screen.dart';
+import '../providers/instrument_provider.dart';
+import '../screens/instruments_screen.dart';
 
 /// A shared settings bottom sheet for music display and playback settings.
 class NoteSettingsSheet extends StatelessWidget {
@@ -59,7 +59,7 @@ class NoteSettingsSheet extends StatelessWidget {
             top: 12,
             bottom: MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          child: Consumer<ColorSchemeProvider>(
+          child: Consumer<InstrumentProvider>(
             builder: (context, provider, _) => SingleChildScrollView(
               primary: true,
               child: Column(
@@ -199,7 +199,7 @@ class NoteSettingsSheet extends StatelessWidget {
                         Navigator.pop(context);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
+                          MaterialPageRoute(builder: (_) => const InstrumentsScreen()),
                         );
                       },
                     ),

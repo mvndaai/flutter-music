@@ -4,14 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../music_kit/models/song.dart';
 import '../music_kit/models/music_note.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
-import '../providers/color_scheme_provider.dart';
-import '../services/audio_service.dart';
+import '../music_kit/models/instrument_profile.dart';
+import '../providers/instrument_provider.dart';
+import '../services/pitch_detection_service.dart';
 import '../music_kit/utils/music_constants.dart';
 import '../widgets/sheet_music_widget.dart';
 import '../music_kit/utils/note_resolver.dart';
 import '../widgets/note_settings_sheet.dart';
-import 'color_schemes_screen.dart';
+import 'instruments_screen.dart';
+import '../music_kit/models/instrument_profile.dart';
 
 /// Practice screen: displays sheet music and listens to the microphone.
 /// When the microphone hears the current note, the app advances to the next.
@@ -26,7 +27,7 @@ class PracticeScreen extends StatefulWidget {
 
 class _PracticeScreenState extends State<PracticeScreen>
     with SingleTickerProviderStateMixin {
-  final AudioService _audio = AudioService();
+  final PitchDetectionService _audio = PitchDetectionService();
 
   int _currentNoteIndex = 0;
   bool _micActive = false;
@@ -111,7 +112,7 @@ class _PracticeScreenState extends State<PracticeScreen>
 
     // Apply tuning override: if this instrument has a mapping for the expected note,
     // listen for the mapped note instead.
-    final activeScheme = context.read<ColorSchemeProvider>().activeScheme;
+    final activeScheme = context.read<InstrumentProvider>().activeScheme;
     final specificNote = current.letterName; // e.g. "C5"
 
     // Resolve target note name with enharmonic and octave-fallback support
@@ -194,7 +195,7 @@ class _PracticeScreenState extends State<PracticeScreen>
         ? 0.0
         : (_currentNoteIndex / _notes.length).clamp(0.0, 1.0);
 
-    return Consumer<ColorSchemeProvider>(
+    return Consumer<InstrumentProvider>(
       builder: (context, provider, _) => Focus(
         autofocus: true,
         onKeyEvent: (node, event) {
@@ -203,7 +204,7 @@ class _PracticeScreenState extends State<PracticeScreen>
           final activeScheme = provider.activeScheme;
           final overrides = activeScheme.keyboardOverrides.isNotEmpty
               ? activeScheme.keyboardOverrides
-              : InstrumentColorScheme.black.keyboardOverrides;
+              : InstrumentProfile.black.keyboardOverrides;
 
           final physicalKeyName =
               event.physicalKey.debugName?.replaceAll(' ', '') ?? '';
@@ -304,7 +305,7 @@ class _PracticeScreenState extends State<PracticeScreen>
                 ),
                 keyboardOverrides: provider.activeScheme.keyboardOverrides.isNotEmpty
                     ? provider.activeScheme.keyboardOverrides
-                    : InstrumentColorScheme.black.keyboardOverrides,
+                    : InstrumentProfile.black.keyboardOverrides,
               ),
 
             const Divider(height: 1),

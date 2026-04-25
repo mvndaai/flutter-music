@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../services/audio_service.dart';
+import '../../services/pitch_detection_service.dart';
 
 /// Result returned by [showTuningWizard].
 class TuningResult {
@@ -51,7 +51,7 @@ class _TuningWizardScreenState extends State<_TuningWizardScreen> {
   int _currentIndex = 0;
   final Map<String, String> _overrides = {};
   
-  final AudioService _audio = AudioService();
+  final PitchDetectionService _audio = PitchDetectionService();
   StreamSubscription<String>? _noteSub;
   bool _micActive = false;
   String _liveNote = '';

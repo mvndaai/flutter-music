@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/audio_service.dart';
-import 'note_color_picker.dart';
+import '../../services/pitch_detection_service.dart';
+import '../note_color_picker.dart';
 
 // Luminance threshold above which black text is readable on the color swatch.
 const double _kContrastLuminanceThreshold = 0.35;
@@ -52,7 +52,7 @@ class _AddKeyWizardScreenState extends State<_AddKeyWizardScreen> {
   int _step = 0;
 
   // ── Step 0 state ──────────────────────────────────────────────────────────
-  final AudioService _audio = AudioService();
+  final PitchDetectionService _audio = PitchDetectionService();
   StreamSubscription<String>? _noteSub;
   bool _micActive = false;
   String _liveNote = '';

@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
-import '../providers/color_scheme_provider.dart';
+import '../music_kit/models/instrument_profile.dart';
+import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
 
 /// Screen for configuring keyboard-to-note mappings for an instrument.
 class KeyboardConfigScreen extends StatefulWidget {
-  final InstrumentColorScheme scheme;
+  final InstrumentProfile scheme;
   const KeyboardConfigScreen({super.key, required this.scheme});
 
   @override
@@ -26,7 +26,7 @@ class _KeyboardConfigScreenState extends State<KeyboardConfigScreen> {
   }
 
   void _save() {
-    context.read<ColorSchemeProvider>().updateKeyboardOverrides(widget.scheme.id, _overrides);
+    context.read<InstrumentProvider>().updateKeyboardOverrides(widget.scheme.id, _overrides);
   }
 
   Future<void> _exportOverrides() async {

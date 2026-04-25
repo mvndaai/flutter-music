@@ -1,5 +1,5 @@
 import '../models/music_note.dart';
-import '../models/instrument_color_scheme.dart';
+import '../models/instrument_profile.dart';
 import 'music_constants.dart';
 
 /// Handles resolving musical notes considering enharmonics, octaves, and instrument-specific tunings.
@@ -10,7 +10,7 @@ class NoteResolver {
   /// accounting for instrument-specific [activeScheme] tuning overrides.
   static String resolveTargetNote({
     required MusicNote note,
-    required InstrumentColorScheme activeScheme,
+    required InstrumentProfile activeScheme,
   }) {
     final specificNote = note.letterName; // e.g. "C5"
 

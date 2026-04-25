@@ -16,7 +16,7 @@ const Map<String, String> kFlatToSharp = {
 };
 
 /// A named mapping from each of the 12 chromatic notes to a display [Color].
-class InstrumentColorScheme {
+class InstrumentProfile {
   final String id;
   final String name;
   final String? icon;
@@ -45,7 +45,7 @@ class InstrumentColorScheme {
   /// E.g. `{'C4': 'KeyA'}`.
   final Map<String, String> keyboardOverrides;
 
-  const InstrumentColorScheme({
+  const InstrumentProfile({
     required this.id,
     required this.name,
     this.icon,
@@ -112,7 +112,7 @@ class InstrumentColorScheme {
     return baseColor;
   }
 
-  InstrumentColorScheme copyWith({
+  InstrumentProfile copyWith({
     String? id,
     String? name,
     String? icon,
@@ -129,7 +129,7 @@ class InstrumentColorScheme {
     // If both are provided, we should probably prefer emoji or follow the caller.
     // To support clearing, we can check if they are explicitly passed.
     // For now, we'll stick to the existing pattern but be mindful in the caller.
-    return InstrumentColorScheme(
+    return InstrumentProfile(
       id: id ?? this.id,
       name: name ?? this.name,
       icon: icon ?? this.icon,
@@ -145,8 +145,8 @@ class InstrumentColorScheme {
   }
 
   /// Returns a copy of this scheme with the icon/emoji cleared so only one is set.
-  InstrumentColorScheme withIconOnly({String? icon, String? emoji}) {
-    return InstrumentColorScheme(
+  InstrumentProfile withIconOnly({String? icon, String? emoji}) {
+    return InstrumentProfile(
       id: id,
       name: name,
       icon: icon,
@@ -174,14 +174,14 @@ class InstrumentColorScheme {
         // Skipped attributes: id, tuningOverrides, isBuiltIn, isImported
       };
 
-  factory InstrumentColorScheme.fromJson(Map<String, dynamic> json, {String? fallbackId}) {
+  factory InstrumentProfile.fromJson(Map<String, dynamic> json, {String? fallbackId}) {
     final rawColors = json['colors'] as Map<String, dynamic>? ?? {};
     final rawOverrides =
         json['octaveOverrides'] as Map<String, dynamic>? ?? {};
     final rawDisabled = json['disabledKeys'] as List<dynamic>? ?? [];
     final rawTuning = json['tuningOverrides'] as Map<String, dynamic>? ?? {};
     final rawKeyboard = json['keyboardOverrides'] as Map<String, dynamic>? ?? {};
-    return InstrumentColorScheme(
+    return InstrumentProfile(
       id: (json['id'] as String?) ?? fallbackId ?? const Uuid().v7(),
       name: json['name'] as String,
       icon: json['icon'] as String?,
@@ -197,7 +197,7 @@ class InstrumentColorScheme {
     );
   }
 
-  static const InstrumentColorScheme black = InstrumentColorScheme(
+  static const InstrumentProfile black = InstrumentProfile(
     id: 'builtin_black',
     name: 'Standard',
     emoji: '🎹',

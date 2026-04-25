@@ -3,17 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
-import '../providers/color_scheme_provider.dart';
+import '../music_kit/models/instrument_profile.dart';
+import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
-import '../widgets/note_color_picker.dart';
-import '../widgets/add_key_wizard.dart';
-import '../widgets/tuning_wizard.dart';
 import 'keyboard_config_screen.dart';
+import 'instrument_editor_screen.dart';
 
-/// Screen for managing instrument color schemes.
-class ColorSchemesScreen extends StatelessWidget {
-  const ColorSchemesScreen({super.key});
+/// Screen for managing instrument profiles.
+class InstrumentsScreen extends StatelessWidget {
+  const InstrumentsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +26,7 @@ class ColorSchemesScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<ColorSchemeProvider>(
+      body: Consumer<InstrumentProvider>(
         builder: (context, provider, _) {
           final schemes = provider.allSchemes;
           return ListView.separated(
@@ -67,7 +65,7 @@ class ColorSchemesScreen extends StatelessWidget {
   }
 
   Future<void> _openLibrary(BuildContext context) async {
-    final provider = context.read<ColorSchemeProvider>();
+    final provider = context.read<InstrumentProvider>();
     final library = await provider.loadLibrary();
     if (!context.mounted) return;
 
@@ -78,7 +76,7 @@ class ColorSchemesScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _shareScheme(BuildContext context, InstrumentColorScheme scheme) async {
+  Future<void> _shareScheme(BuildContext context, InstrumentProfile scheme) async {
     final json = jsonEncode(scheme.toJson());
     final title = 'New Instrument: ${scheme.name}';
     final body = 'Please add this instrument to the built-in library.\n\n```json\n$json\n```';
@@ -102,7 +100,7 @@ class ColorSchemesScreen extends StatelessWidget {
   }
 
   Future<void> _createNew(BuildContext context) async {
-    final provider = context.read<ColorSchemeProvider>();
+    final provider = context.read<InstrumentProvider>();
     final result = await _promptNameIconEmoji(context, initialName: '', initialIcon: null, initialEmoji: null);
     if (result == null) return;
     final name = result['name'] ?? '';
@@ -120,21 +118,21 @@ class ColorSchemesScreen extends StatelessWidget {
 
   Future<void> _openEditor(
     BuildContext context,
-    InstrumentColorScheme scheme,
-    ColorSchemeProvider provider,
+    InstrumentProfile scheme,
+    InstrumentProvider provider,
   ) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _SchemeEditorScreen(scheme: scheme),
+        builder: (_) => InstrumentEditorScreen(scheme: scheme),
       ),
     );
   }
 
   Future<void> _openKeyboardConfig(
     BuildContext context,
-    InstrumentColorScheme scheme,
-    ColorSchemeProvider provider,
+    InstrumentProfile scheme,
+    InstrumentProvider provider,
   ) async {
     await Navigator.push(
       context,
@@ -146,8 +144,8 @@ class ColorSchemesScreen extends StatelessWidget {
 
   Future<void> _confirmDelete(
     BuildContext context,
-    InstrumentColorScheme scheme,
-    ColorSchemeProvider provider,
+    InstrumentProfile scheme,
+    InstrumentProvider provider,
   ) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -178,7 +176,7 @@ class ColorSchemesScreen extends StatelessWidget {
   }) {
     return showDialog<Map<String, String>>(
       context: context,
-      builder: (_) => _NameIconEmojiDialog(
+      builder: (_) => NameIconEmojiDialog(
         initialName: initialName,
         initialIcon: initialIcon,
         initialEmoji: initialEmoji,
@@ -188,7 +186,7 @@ class ColorSchemesScreen extends StatelessWidget {
 }
 
 class _LibrarySearchSheet extends StatefulWidget {
-  final List<InstrumentColorScheme> library;
+  final List<InstrumentProfile> library;
   const _LibrarySearchSheet({required this.library});
 
   @override
@@ -231,11 +229,11 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
                     itemBuilder: (context, index) {
                       final scheme = filtered[index];
                       return ListTile(
-                        leading: _InstrumentIcon(scheme: scheme, size: 32),
+                        leading: InstrumentIcon(scheme: scheme, size: 32),
                         title: Text(scheme.name),
                         trailing: ElevatedButton(
                           onPressed: () async {
-                            await context.read<ColorSchemeProvider>().importScheme(scheme);
+                            await context.read<InstrumentProvider>().importScheme(scheme);
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -255,10 +253,10 @@ class _LibrarySearchSheetState extends State<_LibrarySearchSheet> {
   }
 }
 
-class _InstrumentIcon extends StatelessWidget {
-  final InstrumentColorScheme scheme;
+class InstrumentIcon extends StatelessWidget {
+  final InstrumentProfile scheme;
   final double size;
-  const _InstrumentIcon({required this.scheme, this.size = 32});
+  const InstrumentIcon({super.key, required this.scheme, this.size = 32});
 
   @override
   Widget build(BuildContext context) {
@@ -295,21 +293,22 @@ class _InstrumentIcon extends StatelessWidget {
 
 enum _IconType { emoji, character, url }
 
-class _NameIconEmojiDialog extends StatefulWidget {
+class NameIconEmojiDialog extends StatefulWidget {
   final String initialName;
   final String? initialIcon;
   final String? initialEmoji;
-  const _NameIconEmojiDialog({
+  const NameIconEmojiDialog({
+    super.key,
     required this.initialName,
     this.initialIcon,
     this.initialEmoji,
   });
 
   @override
-  State<_NameIconEmojiDialog> createState() => _NameIconEmojiDialogState();
+  State<NameIconEmojiDialog> createState() => _NameIconEmojiDialogState();
 }
 
-class _NameIconEmojiDialogState extends State<_NameIconEmojiDialog> {
+class _NameIconEmojiDialogState extends State<NameIconEmojiDialog> {
   late final TextEditingController _nameController =
       TextEditingController(text: widget.initialName);
   late final TextEditingController _iconController =
@@ -484,7 +483,7 @@ class _NameIconEmojiDialogState extends State<_NameIconEmojiDialog> {
 // ── Scheme card ───────────────────────────────────────────────────────────
 
 class _SchemeCard extends StatelessWidget {
-  final InstrumentColorScheme scheme;
+  final InstrumentProfile scheme;
   final bool isActive;
   final VoidCallback onActivate;
   final VoidCallback onClone;
@@ -520,7 +519,7 @@ class _SchemeCard extends StatelessWidget {
                 color: isActive ? Theme.of(context).colorScheme.primary : null,
               ),
               const SizedBox(width: 8),
-              _InstrumentIcon(scheme: scheme, size: 32),
+              InstrumentIcon(scheme: scheme, size: 32),
               const SizedBox(width: 12),
               // Color swatch row
               Expanded(
@@ -576,7 +575,7 @@ class _SchemeCard extends StatelessWidget {
 }
 
 class _ColorSwatchRow extends StatelessWidget {
-  final InstrumentColorScheme scheme;
+  final InstrumentProfile scheme;
   const _ColorSwatchRow({required this.scheme});
 
   @override
@@ -631,438 +630,6 @@ class _SwatchCircle extends StatelessWidget {
             width: 1,
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── Scheme editor screen ──────────────────────────────────────────────────
-
-class _SchemeEditorScreen extends StatefulWidget {
-  final InstrumentColorScheme scheme;
-  const _SchemeEditorScreen({required this.scheme});
-
-  @override
-  State<_SchemeEditorScreen> createState() => _SchemeEditorScreenState();
-}
-
-class _SchemeEditorScreenState extends State<_SchemeEditorScreen> {
-  late Map<String, Color> _colors;
-  late Map<String, Color> _octaveOverrides;
-  late Set<String> _disabledKeys;
-  late Map<String, String> _tuningOverrides;
-  late String _name;
-  late String? _icon;
-  late String? _emoji;
-
-  @override
-  void initState() {
-    super.initState();
-    _colors = Map.from(widget.scheme.colors);
-    _octaveOverrides = Map.from(widget.scheme.octaveOverrides);
-    _disabledKeys = Set.from(widget.scheme.disabledKeys);
-    _tuningOverrides = Map.from(widget.scheme.tuningOverrides);
-    _name = widget.scheme.name;
-    _icon = widget.scheme.icon;
-    _emoji = widget.scheme.emoji;
-  }
-
-  Future<void> _save() async {
-    final updated = widget.scheme.withIconOnly(
-      icon: _icon,
-      emoji: _emoji,
-    ).copyWith(
-      name: _name,
-      colors: _colors,
-      octaveOverrides: _octaveOverrides,
-      disabledKeys: _disabledKeys,
-      tuningOverrides: _tuningOverrides,
-    );
-    await context.read<ColorSchemeProvider>().updateCustom(updated);
-  }
-
-  Future<void> _editInfo() async {
-    final result = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (_) => _NameIconEmojiDialog(
-        initialName: _name,
-        initialIcon: _icon,
-        initialEmoji: _emoji,
-      ),
-    );
-    if (result != null) {
-      final name = result['name'] ?? '';
-      final icon = result['icon'] ?? '';
-      final emoji = result['emoji'] ?? '';
-      setState(() {
-        _name = name.trim();
-        _icon = icon.isNotEmpty ? icon.trim() : null;
-        _emoji = emoji.isNotEmpty ? emoji.trim() : null;
-      });
-      _save();
-    }
-  }
-
-  Future<void> _addKeyWizard() async {
-    final result = await showAddKeyWizard(context);
-    if (result == null) return;
-    setState(() {
-      _octaveOverrides[result.noteKey] = result.color;
-    });
-    _save();
-  }
-
-  Future<void> _tuneInstrument() async {
-    // Collect all keys that can be tuned:
-    // 1. All standard 12 chromatic notes (at a reasonable octave like 4)
-    // 2. All octave overrides
-    final chromaticBase = kNoteKeys
-        .where((n) => !_disabledKeys.contains(n))
-        .map((n) => '${n}4')
-        .toList();
-    final overrides = _octaveOverrides.keys.toList();
-
-    // Use a Set to avoid duplicates and sort by pitch
-    final allNotesToTune = <String>{...chromaticBase, ...overrides}.toList()
-      ..sort((a, b) => MusicConstants.noteNameToMidi(a)
-          .compareTo(MusicConstants.noteNameToMidi(b)));
-
-    if (allNotesToTune.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No keys available to tune')),
-      );
-      return;
-    }
-
-    final currentScheme = widget.scheme.copyWith(
-      name: _name,
-      icon: _icon,
-      colors: _colors,
-      octaveOverrides: _octaveOverrides,
-      tuningOverrides: _tuningOverrides,
-    );
-
-    final result = await showTuningWizard(
-      context,
-      notesToTune: allNotesToTune,
-      initialOverrides: _tuningOverrides,
-      colorProvider: (noteName) {
-        // Parse noteName (e.g. "C4", "F#4")
-        final match = RegExp(r'^([A-G])([#b])?(-?\d+)$').firstMatch(noteName);
-        if (match == null) return Colors.grey;
-        final step = match.group(1)!;
-        final acc = match.group(2) ?? '';
-        final octaveStr = match.group(3);
-        final octave = octaveStr != null ? int.tryParse(octaveStr) : null;
-        final alter = acc == '#' ? 1.0 : (acc == 'b' ? -1.0 : 0.0);
-
-        return currentScheme.colorForNote(
-          step,
-          alter,
-          octave: octave,
-          context: context,
-        );
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        _tuningOverrides = result.tuningOverrides;
-      });
-      _save();
-    }
-  }
-
-  Widget _buildChromaticRow(int index, InstrumentColorScheme currentScheme) {
-    final note = kNoteKeys[index];
-    final color = _colors[note] ?? currentScheme.colorForNote(note, 0, context: context);
-    final isDisabled = _disabledKeys.contains(note);
-    
-    // Check if there is a tuning override for the base note (using octave 4 as reference)
-    final tunedTo = _tuningOverrides['${note}4'];
-    
-    final textColor = color.computeLuminance() > 0.35
-        ? Colors.black87
-        : Colors.white;
-
-    return Opacity(
-      opacity: isDisabled ? 0.4 : 1.0,
-      child: ListTile(
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              note,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ),
-        title: Row(
-          children: [
-            Text(note),
-            if (tunedTo != null && tunedTo != '${note}4') ...[
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(
-                tunedTo,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.tune, size: 14, color: Colors.grey),
-            ],
-          ],
-        ),
-        subtitle: Text(
-          isDisabled
-              ? 'Disabled for this instrument'
-              : '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0').substring(2)}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: !isDisabled,
-              onChanged: (val) {
-                setState(() {
-                  if (val) {
-                    _disabledKeys.remove(note);
-                  } else {
-                    _disabledKeys.add(note);
-                  }
-                });
-                _save();
-              },
-            ),
-            const Icon(Icons.color_lens_outlined),
-          ],
-        ),
-        onTap: isDisabled
-            ? null
-            : () async {
-                final picked = await showNoteColorPicker(
-                  context,
-                  current: color,
-                  label: note,
-                );
-                if (picked != null) {
-                  setState(() {
-                    _colors[note] = picked;
-                  });
-                  _save();
-                }
-              },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentScheme = widget.scheme.copyWith(
-      name: _name,
-      icon: _icon,
-      emoji: _emoji,
-      colors: _colors,
-      octaveOverrides: _octaveOverrides,
-    );
-    final overrideKeys = _octaveOverrides.keys.toList()..sort();
-    final hasOverrides = overrideKeys.isNotEmpty;
-    final n = overrideKeys.length;
-
-    // Item layout:
-    // 0: "My Keys" header
-    // 1..n: Overrides
-    // n+1: "Add Key" button
-    // n+2: "Default Colors" header + first chromatic row
-    // n+3..n+13: remaining chromatic rows
-    final totalItems = 1 + n + 1 + 12;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            _InstrumentIcon(scheme: currentScheme, size: 28),
-            const SizedBox(width: 12),
-            Expanded(child: Text(_name)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Tune all keys',
-            onPressed: _tuneInstrument,
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: 'Edit name and icon',
-            onPressed: _editInfo,
-          ),
-        ],
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: totalItems,
-        separatorBuilder: (_, i) {
-          // No divider after headers or the Add button
-          if (i == 0 || i == n + 1) return const SizedBox.shrink();
-          return const Divider(height: 1);
-        },
-        itemBuilder: (context, index) {
-          // ── 1. My Keys section header ──────────────────────────────────
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.piano_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'My Keys',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  if (!hasOverrides)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        '(none yet – tap "Add Key" to get started)',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                ],
-              ),
-            );
-          }
-
-          // ── 2. Override rows ───────────────────────────────────────────
-          if (index > 0 && index <= n) {
-            final key = overrideKeys[index - 1];
-            final color = _octaveOverrides[key]!;
-            final tunedTo = _tuningOverrides[key];
-            final textColor = color.computeLuminance() > 0.35
-                ? Colors.black87
-                : Colors.white;
-            return ListTile(
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    key,
-                    style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ),
-              title: Row(
-                children: [
-                  Text(key),
-                  if (tunedTo != null && tunedTo != key) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(
-                      tunedTo,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.tune, size: 14, color: Colors.grey),
-                  ],
-                ],
-              ),
-              subtitle: Text(
-                '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0').substring(2)}',
-                style: const TextStyle(fontSize: 12),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.color_lens_outlined),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: 'Remove override',
-                    onPressed: () {
-                      setState(() {
-                        _octaveOverrides.remove(key);
-                      });
-                      _save();
-                    },
-                  ),
-                ],
-              ),
-              onTap: () async {
-                final picked = await showNoteColorPicker(
-                  context,
-                  current: color,
-                  label: key,
-                );
-                if (picked != null) {
-                  setState(() {
-                    _octaveOverrides[key] = picked;
-                  });
-                  _save();
-                }
-              },
-            );
-          }
-
-          // ── 3. Add key button ──────────────────────────────────────────
-          if (index == n + 1) {
-            return ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.add),
-              ),
-              title: const Text('Add Key…'),
-              subtitle: const Text(
-                'Hit a key on your instrument to detect its note, then choose a color',
-                style: TextStyle(fontSize: 12),
-              ),
-              onTap: _addKeyWizard,
-            );
-          }
-
-          // ── 4. Chromatic note rows ─────────────────────────────────────
-          final chromaticIndex = index - (n + 2);
-          if (chromaticIndex == 0) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Divider(height: 32),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                  child: Text(
-                    'Default Colors',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ),
-                _buildChromaticRow(chromaticIndex, currentScheme),
-              ],
-            );
-          }
-          return _buildChromaticRow(chromaticIndex, currentScheme);
-        },
       ),
     );
   }

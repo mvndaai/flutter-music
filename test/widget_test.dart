@@ -3,9 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_music/music_kit/models/music_note.dart';
 import 'package:flutter_music/music_kit/models/measure.dart';
 import 'package:flutter_music/music_kit/models/song.dart';
-import 'package:flutter_music/music_kit/models/instrument_color_scheme.dart';
+import 'package:flutter_music/music_kit/models/instrument_profile.dart';
 import 'package:flutter_music/services/musicxml_parser.dart';
-import 'package:flutter_music/providers/color_scheme_provider.dart';
+import 'package:flutter_music/providers/instrument_provider.dart';
 import 'package:flutter_music/music_kit/utils/music_constants.dart';
 import 'package:flutter_music/music_kit/utils/note_colors.dart';
 import 'package:flutter/material.dart';
@@ -260,10 +260,10 @@ void main() {
     });
   });
 
-  group('InstrumentColorScheme', () {
+  group('InstrumentProfile', () {
     testWidgets('colorForNote returns standard color for natural note in black scheme', (tester) async {
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: Builder(builder: (context) {
-        final color = InstrumentColorScheme.black.colorForNote('C', 0, context: context);
+        final color = InstrumentProfile.black.colorForNote('C', 0, context: context);
         // In light mode, it should be black
         expect(color, Colors.black);
         return const SizedBox();
@@ -275,7 +275,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: ThemeData(brightness: Brightness.light),
         home: Scaffold(body: Builder(builder: (context) {
-          final color = InstrumentColorScheme.black.colorForNote('C', 0, context: context);
+          final color = InstrumentProfile.black.colorForNote('C', 0, context: context);
           expect(color.value, Colors.black.value);
           return const SizedBox();
         })),
@@ -287,7 +287,7 @@ void main() {
         home: Scaffold(body: Builder(builder: (context) {
           // If the test environment doesn't propagate theme brightness correctly to the builder,
           // we can also test by passing it explicitly.
-          final colorExplicit = InstrumentColorScheme.black.colorForNote('C', 0, brightness: Brightness.dark);
+          final colorExplicit = InstrumentProfile.black.colorForNote('C', 0, brightness: Brightness.dark);
           expect(colorExplicit.value, Colors.white.value);
           
           // We'll accept either behavior for the context-based lookup in tests as long as one works,
@@ -298,19 +298,19 @@ void main() {
     });
 
     test('toJson / fromJson roundtrip preserves name and colors', () {
-      const scheme = InstrumentColorScheme(
+      const scheme = InstrumentProfile(
         id: 'test_id',
         name: 'Test',
         colors: {'C': Colors.red},
       );
       final json = scheme.toJson();
-      final restored = InstrumentColorScheme.fromJson(json, fallbackId: 'test_id');
+      final restored = InstrumentProfile.fromJson(json, fallbackId: 'test_id');
       expect(restored.name, scheme.name);
       expect(restored.colors['C']?.value, scheme.colors['C']?.value);
     });
 
     test('copyWith changes only specified fields', () {
-      const original = InstrumentColorScheme(
+      const original = InstrumentProfile(
         id: 'test_id',
         name: 'Original',
         colors: {'C': Colors.red},
@@ -329,28 +329,28 @@ void main() {
     });
   });
 
-  group('ColorSchemeProvider', () {
+  group('InstrumentProvider', () {
     setUp(() {
       // Provide an empty in-memory store so SharedPreferences calls don't fail.
       SharedPreferences.setMockInitialValues({});
     });
     test('starts with default rainbow scheme active', () {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       expect(provider.activeId, 'builtin_rainbow');
     });
 
     test('allSchemes contains at least black built-in', () {
-      final provider = ColorSchemeProvider();
-      expect(provider.allSchemes.any((s) => s.id == InstrumentColorScheme.black.id), isTrue);
+      final provider = InstrumentProvider();
+      expect(provider.allSchemes.any((s) => s.id == InstrumentProfile.black.id), isTrue);
     });
 
     test('showNoteLabels defaults to true', () {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       expect(provider.showNoteLabels, isTrue);
     });
 
     test('setActive changes activeId and notifies listeners', () async {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       var notified = false;
       provider.addListener(() => notified = true);
 
@@ -361,7 +361,7 @@ void main() {
     });
 
     test('createCustom adds scheme and makes it available', () async {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       final scheme = await provider.createCustom(name: 'Test Scheme');
 
       expect(provider.allSchemes.any((s) => s.id == scheme.id), isTrue);
@@ -370,7 +370,7 @@ void main() {
     });
 
     test('updateCustom saves color changes', () async {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       final scheme = await provider.createCustom(name: 'Edit Me');
       final updated =
           scheme.copyWith(colors: {...scheme.colors, 'C': const Color(0xFF000000)});
@@ -382,7 +382,7 @@ void main() {
     });
 
     test('deleteCustom removes the scheme', () async {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       final scheme = await provider.createCustom(name: 'Delete Me');
       expect(provider.allSchemes.any((s) => s.id == scheme.id), isTrue);
 
@@ -392,7 +392,7 @@ void main() {
     });
 
     test('deleteCustom falls back to default when active is deleted', () async {
-      final provider = ColorSchemeProvider();
+      final provider = InstrumentProvider();
       final scheme = await provider.createCustom(name: 'Active Custom');
       await provider.setActive(scheme.id);
       expect(provider.activeId, scheme.id);

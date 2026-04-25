@@ -8,7 +8,7 @@ import '../music_kit/utils/music_constants.dart';
 
 /// Listens to the microphone and emits detected note names in real time.
 /// Uses Harmonic Product Spectrum (HPS) and advanced filtering to ignore voices and focus on instruments.
-class AudioService {
+class PitchDetectionService {
   StreamSubscription<Uint8List>? _audioSub;
   StreamController<String>? _noteController;
   bool _isListening = false;
@@ -100,7 +100,7 @@ class AudioService {
         }
       });
     } catch (e) {
-      debugPrint('AudioService error: $e');
+      debugPrint('PitchDetectionService error: $e');
       _isListening = false;
       return false;
     }

@@ -5,7 +5,7 @@ import 'package:printing/printing.dart';
 import '../models/song.dart';
 import '../models/music_note.dart';
 import '../models/measure.dart';
-import '../models/instrument_color_scheme.dart';
+import '../models/instrument_profile.dart';
 import '../sheet_music_constants.dart';
 import 'staff_layout_helper.dart';
 import 'music_constants.dart';
@@ -13,7 +13,7 @@ import 'music_constants.dart';
 class MusicPdfService {
   static Future<void> printSong({
     required Song song,
-    required InstrumentColorScheme colorScheme,
+    required InstrumentProfile colorScheme,
     required bool showSolfege,
     required bool showLetter,
     required bool labelsBelow,
@@ -188,7 +188,7 @@ class MusicPdfService {
 
   static pw.Widget _buildStaffRow({
     required List<Measure> measures,
-    required InstrumentColorScheme colorScheme,
+    required InstrumentProfile colorScheme,
     required double width,
     required double ls,
     required double topMargin,
@@ -267,7 +267,7 @@ class MusicPdfService {
 
   static List<pw.Widget> _buildMeasuresContent({
     required List<Measure> measures,
-    required InstrumentColorScheme colorScheme,
+    required InstrumentProfile colorScheme,
     required double width,
     required double ls,
     required double topMargin,
@@ -546,7 +546,7 @@ class MusicPdfService {
     required double topMargin,
     required double staffHeight,
     required double ls,
-    required InstrumentColorScheme colorScheme,
+    required InstrumentProfile colorScheme,
     required pw.Font musicFont,
     required bool showSolfege,
     required bool showLetter,

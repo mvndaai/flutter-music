@@ -6,15 +6,15 @@ import 'dart:async';
 import '../music_kit/models/song.dart';
 import '../music_kit/models/measure.dart';
 import '../music_kit/models/music_note.dart';
-import '../music_kit/models/instrument_color_scheme.dart';
+import '../music_kit/models/instrument_profile.dart';
 import '../music_kit/utils/music_xml_generator.dart';
 import '../services/musicxml_parser.dart';
 import '../providers/song_provider.dart';
-import '../providers/color_scheme_provider.dart';
-import 'color_schemes_screen.dart';
+import '../providers/instrument_provider.dart';
+import 'instruments_screen.dart';
 import '../widgets/note_settings_sheet.dart';
 import '../widgets/sheet_music_widget.dart';
-import '../services/audio_service.dart';
+import '../services/pitch_detection_service.dart';
 import '../services/tone_player.dart';
 import '../music_kit/utils/music_constants.dart';
 
@@ -27,7 +27,7 @@ class MusicEditorScreen extends StatefulWidget {
 }
 
 class _InstrumentIcon extends StatelessWidget {
-  final InstrumentColorScheme scheme;
+  final InstrumentProfile scheme;
   final double size;
   const _InstrumentIcon({required this.scheme, this.size = 32});
 
@@ -76,7 +76,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   bool _nextIsDotted = false;
   String? _nextBeam;
 
-  final AudioService _audio = AudioService();
+  final PitchDetectionService _audio = PitchDetectionService();
   final TonePlayer _tonePlayer = TonePlayer();
   bool _isListening = false;
   StreamSubscription<String>? _noteSubscription;
@@ -193,7 +193,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   void _addNoteFromMic(String noteName) {
     if (!mounted) return;
     // Apply tuning overrides from active instrument scheme
-    final scheme = context.read<ColorSchemeProvider>().activeScheme;
+    final scheme = context.read<InstrumentProvider>().activeScheme;
     String actualNoteName = noteName;
     if (scheme.tuningOverrides.isNotEmpty) {
       // Find if this heard note is a result of a transposed note in the scheme
@@ -641,15 +641,15 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
           ),
           actions: [
             IconButton(
-              icon: Consumer<ColorSchemeProvider>(
+              icon: Consumer<InstrumentProvider>(
                 builder: (context, cp, _) {
                   final s = cp.activeScheme;
-                  return _InstrumentIcon(scheme: s, size: 24);
+                  return InstrumentIcon(scheme: s, size: 24);
                 },
               ),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
+                MaterialPageRoute(builder: (_) => const InstrumentsScreen()),
               ),
             ),
             IconButton(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/color_scheme_provider.dart';
+import '../providers/instrument_provider.dart';
 import '../music_kit/widgets/note_renderer.dart';
 import '../music_kit/models/music_note.dart';
 
-/// App-specific wrapper around [NoteRenderer] that connects it to [ColorSchemeProvider].
+/// App-specific wrapper around [NoteRenderer] that connects it to [InstrumentProvider].
 class NoteWidget extends StatelessWidget {
   final MusicNote note;
   final bool isActive;
@@ -25,11 +25,11 @@ class NoteWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorProvider = context.watch<ColorSchemeProvider>();
+    final instrumentProvider = context.watch<InstrumentProvider>();
     
     return NoteRenderer(
       note: note,
-      colorScheme: colorProvider.activeScheme,
+      instrument: instrumentProvider.activeScheme,
       showNoteLabels: colorProvider.showNoteLabels,
       isActive: isActive,
       isPast: isPast,

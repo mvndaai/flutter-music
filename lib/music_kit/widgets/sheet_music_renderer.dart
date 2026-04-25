@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/song.dart';
 import '../models/measure.dart';
 import '../models/music_note.dart';
-import '../models/instrument_color_scheme.dart';
+import '../models/instrument_profile.dart';
 import '../sheet_music_constants.dart';
 import 'staff_painter.dart';
 
@@ -17,14 +17,14 @@ class SheetMusicRenderer extends StatefulWidget {
   final bool labelsBelow;
   final bool coloredLabels;
   final int measuresPerRow;
-  final InstrumentColorScheme colorScheme;
+  final InstrumentProfile instrument;
   final bool showNoteLabels;
   final Widget? header;
   final bool includePickupInFirstRow;
 
   const SheetMusicRenderer({
     super.key,
-    required this.colorScheme,
+    required this.instrument,
     required this.song,
     this.activeNoteIndex = -1,
     this.ghostNoteIndex,
@@ -159,7 +159,7 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
                 showLetter: widget.showLetter,
                 labelsBelow: widget.labelsBelow,
                 coloredLabels: widget.coloredLabels,
-                colorScheme: widget.colorScheme,
+                instrument: widget.instrument,
                 showNoteLabels: widget.showNoteLabels,
               );
             }),
@@ -210,7 +210,7 @@ class _StaffRow extends StatelessWidget {
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
-  final InstrumentColorScheme colorScheme;
+  final InstrumentProfile instrument;
   final bool showNoteLabels;
 
   const _StaffRow({
@@ -223,7 +223,7 @@ class _StaffRow extends StatelessWidget {
     required this.showLetter,
     required this.labelsBelow,
     required this.coloredLabels,
-    required this.colorScheme,
+    required this.instrument,
     required this.showNoteLabels,
   });
 
@@ -245,7 +245,7 @@ class _StaffRow extends StatelessWidget {
               showLetter: showLetter,
               labelsBelow: labelsBelow,
               coloredLabels: coloredLabels,
-              colorScheme: colorScheme,
+              instrument: instrument,
               showNoteLabels: showNoteLabels,
               context: context,
             ),

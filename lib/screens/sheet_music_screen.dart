@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../music_kit/models/song.dart';
-import '../providers/color_scheme_provider.dart';
+import '../providers/instrument_provider.dart';
 import '../services/tone_player.dart';
 import '../music_kit/utils/music_pdf_service.dart';
 import '../widgets/sheet_music_widget.dart';
 import '../widgets/note_settings_sheet.dart';
 import 'practice_screen.dart';
-import 'color_schemes_screen.dart';
+import 'instruments_screen.dart';
 import '../providers/song_provider.dart';
 
 /// Displays the full sheet music for a song with color-coded notes.
@@ -46,7 +46,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     if (_tonePlayer.isMetronomeRunning) {
       _tonePlayer.stopMetronome();
     } else {
-      final provider = context.read<ColorSchemeProvider>();
+      final provider = context.read<InstrumentProvider>();
       _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
     }
     if (mounted) {
@@ -154,7 +154,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
         setState(() => _tempo = v);
         // Restart metronome if running
         if (_tonePlayer.isMetronomeRunning) {
-          final provider = context.read<ColorSchemeProvider>();
+          final provider = context.read<InstrumentProvider>();
           _tonePlayer.startMetronome(_tempo, sound: provider.metronomeSound);
         }
       },
@@ -165,7 +165,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
   }
 
   Future<void> _printSong() async {
-    final provider = context.read<ColorSchemeProvider>();
+    final provider = context.read<InstrumentProvider>();
     await MusicPdfService.printSong(
       song: widget.song,
       colorScheme: provider.activeScheme,
@@ -179,7 +179,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ColorSchemeProvider>(
+    return Consumer<InstrumentProvider>(
       builder: (context, provider, _) => CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
           const SingleActivator(LogicalKeyboardKey.keyP, control: true):
@@ -197,7 +197,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
                   tooltip: 'Instruments',
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ColorSchemesScreen()),
+                    MaterialPageRoute(builder: (_) => const InstrumentsScreen()),
                   ),
                 ),
                 IconButton(
