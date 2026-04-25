@@ -47,7 +47,8 @@ class MusicXmlGenerator {
 
     for (var i = 0; i < song.measures.length; i++) {
       final measure = song.measures[i];
-      buffer.writeln('    <measure number="${measure.number}">');
+      final implicitAttr = measure.isPickup ? ' implicit="yes"' : '';
+      buffer.writeln('    <measure number="${measure.number}"$implicitAttr>');
 
       // Attributes (only if changed or first measure)
       final timeChanged = measure.beats != currentBeats || measure.beatType != currentBeatType;

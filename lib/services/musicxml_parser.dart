@@ -103,8 +103,7 @@ class MusicXmlParser {
     for (final measureEl in firstPart.findElements('measure')) {
       final numberStr = measureEl.getAttribute('number') ?? '0';
       final number = int.tryParse(numberStr) ?? 0;
-
-      // Update time/key attributes if present.
+      final isImplicit = measureEl.getAttribute('implicit') == 'yes';
       final attribEl = measureEl.findElements('attributes').firstOrNull;
       if (attribEl != null) {
         final divisionsEl = attribEl.findElements('divisions').firstOrNull;
@@ -132,6 +131,7 @@ class MusicXmlParser {
         notes: notes,
         beats: currentBeats,
         beatType: currentBeatType,
+        isPickup: isImplicit || (number == 0 && measures.isEmpty),
       ));
     }
 

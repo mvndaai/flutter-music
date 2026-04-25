@@ -6,12 +6,14 @@ class Measure {
   final List<MusicNote> notes;
   final int beats;
   final int beatType;
+  final bool isPickup;
 
   const Measure({
     required this.number,
     required this.notes,
     this.beats = 4,
     this.beatType = 4,
+    this.isPickup = false,
   });
 
   List<MusicNote> get playableNotes =>
@@ -22,12 +24,14 @@ class Measure {
     List<MusicNote>? notes,
     int? beats,
     int? beatType,
+    bool? isPickup,
   }) {
     return Measure(
       number: number ?? this.number,
       notes: notes ?? this.notes,
       beats: beats ?? this.beats,
       beatType: beatType ?? this.beatType,
+      isPickup: isPickup ?? this.isPickup,
     );
   }
 }

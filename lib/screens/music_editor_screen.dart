@@ -86,6 +86,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   int _playbackMeasureIndex = -1;
   int _playbackNoteIndex = -1;
   bool _playWholeSong = false;
+  bool _includePickupInFirstRow = true;
 
   final List<Song> _history = [];
   int _historyIndex = -1;
@@ -317,6 +318,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   }
 
   void _startPlayback() {
+    final songWithRests = _song.copyWith(measures: _fillRests(_song.measures));
     setState(() {
       _isPlaying = true;
       _playbackMeasureIndex = _selectedMeasureIndex;
@@ -325,7 +327,7 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
         _playbackMeasureIndex = 0;
       }
     });
-    _scheduleNextNote();
+    _scheduleNextNote(songWithRests);
   }
 
   void _stopPlayback() {
@@ -344,15 +346,15 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
     }
   }
 
-  void _scheduleNextNote() {
+  void _scheduleNextNote(Song playbackSong) {
     if (!_isPlaying || !mounted) return;
-    
-    final m = _song.measures[_playbackMeasureIndex];
+
+    final m = playbackSong.measures[_playbackMeasureIndex];
     if (_playbackNoteIndex >= m.notes.length) {
-      if (_playWholeSong && _playbackMeasureIndex < _song.measures.length - 1) {
+      if (_playWholeSong && _playbackMeasureIndex < playbackSong.measures.length - 1) {
         _playbackMeasureIndex++;
         _playbackNoteIndex = 0;
-        _scheduleNextNote();
+        _scheduleNextNote(playbackSong);
       } else {
         _stopPlayback();
       }
@@ -371,13 +373,17 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
     _playbackTimer = Timer(Duration(milliseconds: noteDurationMs), () {
       _playbackNoteIndex++;
-      _scheduleNextNote();
+      _scheduleNextNote(playbackSong);
     });
   }
 
   List<Measure> _fillRests(List<Measure> measures) {
     final List<Measure> result = [];
     for (final m in measures) {
+      if (m.isPickup) {
+        result.add(m);
+        continue;
+      }
       double totalDuration = 0;
       for (final n in m.notes) {
         totalDuration += n.duration;
@@ -453,7 +459,8 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   }
 
   Future<void> _save() async {
-    final xml = MusicXmlGenerator.generate(_song);
+    final songWithRests = _song.copyWith(measures: _fillRests(_song.measures));
+    final xml = MusicXmlGenerator.generate(songWithRests);
     final provider = context.read<SongProvider>();
     String id = _song.id;
     if (id.isEmpty) {
@@ -664,8 +671,9 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
           children: [
             Expanded(
               child: SheetMusicWidget(
-                song: _song,
+                song: _song.copyWith(measures: _fillRests(_song.measures)),
                 measuresPerRow: 2,
+                includePickupInFirstRow: _includePickupInFirstRow,
                 activeNoteIndex: _getGlobalActiveIndex(),
                 ghostNoteIndex: _isPlaying ? null : _getGhostNoteGlobalIndex(),
                 ghostNote: _isPlaying ? null : MusicNote(
@@ -743,9 +751,10 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
   int _getGlobalActiveIndex() {
     if (_isPlaying) {
+      final playbackSong = _song.copyWith(measures: _fillRests(_song.measures));
       int idx = 0;
       for (int i = 0; i < _playbackMeasureIndex; i++) {
-        idx += _song.measures[i].playableNotes.length;
+        idx += playbackSong.measures[i].notes.length;
       }
       return idx + _playbackNoteIndex;
     }
@@ -753,12 +762,13 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   }
 
   int _getGhostNoteGlobalIndex() {
-    if (_selectedMeasureIndex >= _song.measures.length) return 0;
+    final displaySong = _song.copyWith(measures: _fillRests(_song.measures));
+    if (_selectedMeasureIndex >= displaySong.measures.length) return 0;
     int idx = 0;
     for (int i = 0; i < _selectedMeasureIndex; i++) {
-      idx += _song.measures[i].playableNotes.length;
+      idx += displaySong.measures[i].notes.length;
     }
-    return idx + _song.measures[_selectedMeasureIndex].playableNotes.length;
+    return idx + displaySong.measures[_selectedMeasureIndex].notes.length;
   }
 
   Widget _buildEditorControls() {
@@ -811,6 +821,21 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
   Widget _buildTransportRow(Measure m) {
     final colorScheme = Theme.of(context).colorScheme;
+    final pickupCount = _song.measures.where((m) => m.isPickup).length;
+    final totalMeasures = _song.measures.length - pickupCount;
+    
+    String measureLabel;
+    if (m.isPickup) {
+      measureLabel = 'Pickup';
+    } else {
+      // Find the count of non-pickup measures before and including this one
+      int index = 0;
+      for (int i = 0; i <= _selectedMeasureIndex; i++) {
+        if (!_song.measures[i].isPickup) index++;
+      }
+      measureLabel = '$index / $totalMeasures';
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
       child: Row(
@@ -861,9 +886,12 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
                 ),
-                Text(
-                  '${_selectedMeasureIndex + 1} / ${_song.measures.length}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(
+                    measureLabel,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right, size: 18),
@@ -907,47 +935,82 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
   void _showTimeSigDialog(Measure m) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Time Signature'),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            DropdownButton<int>(
-              value: m.beats,
-              items: [2, 3, 4, 5, 6, 7, 8].map((i) => DropdownMenuItem(value: i, child: Text(i.toString()))).toList(),
-              onChanged: (v) {
-                if (v != null) {
-                  setState(() {
-                    final measures = List<Measure>.from(_song.measures);
-                    measures[_selectedMeasureIndex] = m.copyWith(beats: v);
-                    _song = _song.copyWith(measures: measures);
-                    _saveToHistory();
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text('/', style: TextStyle(fontSize: 20)),
-            ),
-            DropdownButton<int>(
-              value: m.beatType,
-              items: [2, 4, 8].map((i) => DropdownMenuItem(value: i, child: Text(i.toString()))).toList(),
-              onChanged: (v) {
-                if (v != null) {
-                  setState(() {
-                    final measures = List<Measure>.from(_song.measures);
-                    measures[_selectedMeasureIndex] = m.copyWith(beatType: v);
-                    _song = _song.copyWith(measures: measures);
-                    _saveToHistory();
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Measure Settings'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButton<int>(
+                    value: m.beats,
+                    items: [2, 3, 4, 5, 6, 7, 8].map((i) => DropdownMenuItem(value: i, child: Text(i.toString()))).toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() {
+                          final measures = List<Measure>.from(_song.measures);
+                          measures[_selectedMeasureIndex] = m.copyWith(beats: v);
+                          _song = _song.copyWith(measures: measures);
+                          _saveToHistory();
+                        });
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text('/', style: TextStyle(fontSize: 20)),
+                  ),
+                  DropdownButton<int>(
+                    value: m.beatType,
+                    items: [2, 4, 8].map((i) => DropdownMenuItem(value: i, child: Text(i.toString()))).toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() {
+                          final measures = List<Measure>.from(_song.measures);
+                          measures[_selectedMeasureIndex] = m.copyWith(beatType: v);
+                          _song = _song.copyWith(measures: measures);
+                          _saveToHistory();
+                        });
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                title: const Text('Pickup Measure'),
+                subtitle: const Text('Incomplete measure at start'),
+                value: m.isPickup,
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() {
+                      final measures = List<Measure>.from(_song.measures);
+                      measures[_selectedMeasureIndex] = m.copyWith(isPickup: v);
+                      _song = _song.copyWith(measures: measures);
+                      _saveToHistory();
+                    });
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              if (m.isPickup)
+                CheckboxListTile(
+                  title: const Text('Include in same row'),
+                  subtitle: const Text('Layout pickup with next measures'),
+                  value: _includePickupInFirstRow,
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() => _includePickupInFirstRow = v);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );

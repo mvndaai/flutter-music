@@ -78,18 +78,31 @@ class StaffPainter extends CustomPainter {
 
     double x = _drawClefAndTimeSig(canvas, clefColor);
     final double startX = x;
-
     final availW = size.width - startX;
     final measureW = availW / row.measuresPerRow;
-    final actualW = startX + (row.measures.length * measureW);
 
-    _drawStaffLines(canvas, actualW, linePaint);
+    // Calculate total staff width first to avoid lines overextending
+    double totalStaffW = startX;
+    final List<double> measureWidths = [];
+    for (final m in row.measures) {
+      double w = measureW;
+      if (m.isPickup) {
+        final durBeats = m.notes.fold(0.0, (s, n) => s + n.duration) * (m.beatType / 4.0);
+        final ratio = (durBeats / m.beats).clamp(0.25, 0.5);
+        w = measureW * ratio;
+      }
+      measureWidths.add(w);
+      totalStaffW += w;
+    }
+
+    _drawStaffLines(canvas, totalStaffW, linePaint);
 
     int noteOffset = row.firstNoteIndex;
     Measure? currentPrevMeasure = row.previousMeasure;
 
     for (int mi = 0; mi < row.measures.length; mi++) {
       final m = row.measures[mi];
+      final currentMeasureW = measureWidths[mi];
 
       final bool hasTimeSig = (currentPrevMeasure == null || 
           m.beats != currentPrevMeasure.beats || 
@@ -99,20 +112,23 @@ class StaffPainter extends CustomPainter {
         _drawTimeSig(canvas, m.beats, m.beatType, x, clefColor);
       }
 
-      _drawMeasureNumber(canvas, m.number, x);
-      _drawMeasureNotes(canvas, m, x, measureW, noteOffset, clefColor, hasTimeSig: hasTimeSig);
+      if (m.number > 0) {
+        _drawMeasureNumber(canvas, m.number, x);
+      }
+      
+      _drawMeasureNotes(canvas, m, x, currentMeasureW, noteOffset, clefColor, hasTimeSig: hasTimeSig);
       
       // Draw ghost note if it belongs to this measure
       if (ghostNoteIndex != null && ghostNote != null) {
         final localGhostIndex = ghostNoteIndex! - noteOffset;
-        if (localGhostIndex == m.playableNotes.length) {
+        if (localGhostIndex == m.notes.length) {
           final displayNotes = m.notes.where((n) => !n.isChordContinuation).toList();
           final cumulativeDuration = displayNotes.fold(0.0, (s, n) => s + n.duration);
           
           final ghostX = StaffLayoutHelper.getNoteX(
             measure: m,
             startX: x,
-            measureWidth: measureW,
+            measureWidth: currentMeasureW,
             hasTimeSig: hasTimeSig,
             cumulativeDuration: cumulativeDuration,
             displayNotes: displayNotes,
@@ -126,8 +142,8 @@ class StaffPainter extends CustomPainter {
         }
       }
 
-      noteOffset += m.playableNotes.length;
-      x += measureW;
+      noteOffset += m.notes.length;
+      x += currentMeasureW;
       currentPrevMeasure = m;
 
       final isLastMeasureInRow = mi == row.measures.length - 1;

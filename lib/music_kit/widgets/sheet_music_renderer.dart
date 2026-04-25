@@ -20,11 +20,12 @@ class SheetMusicRenderer extends StatelessWidget {
   final InstrumentColorScheme colorScheme;
   final bool showNoteLabels;
   final Widget? header;
+  final bool includePickupInFirstRow;
 
   const SheetMusicRenderer({
     super.key,
-    required this.song,
     required this.colorScheme,
+    required this.song,
     this.activeNoteIndex = -1,
     this.ghostNoteIndex,
     this.ghostNote,
@@ -35,6 +36,7 @@ class SheetMusicRenderer extends StatelessWidget {
     this.measuresPerRow = 4,
     this.showNoteLabels = true,
     this.header,
+    this.includePickupInFirstRow = true,
   });
 
   @override
@@ -74,19 +76,29 @@ class SheetMusicRenderer extends StatelessWidget {
     final rows = <StaffRowData>[];
     int noteOffset = 0;
     Measure? prevMeasure;
-    for (int i = 0; i < song.measures.length; i += measuresPerRow) {
-      final end = (i + measuresPerRow).clamp(0, song.measures.length);
+
+    int i = 0;
+    while (i < song.measures.length) {
+      int count = measuresPerRow;
+      // If this is the first row and we have a pickup, and the option is enabled,
+      // we add one to the count so the pickup is "extra".
+      if (i == 0 && includePickupInFirstRow && song.measures.isNotEmpty && song.measures[0].isPickup) {
+        count++;
+      }
+
+      final end = (i + count).clamp(0, song.measures.length);
       final batch = song.measures.sublist(i, end);
       rows.add(StaffRowData(
         measures: batch,
         firstNoteIndex: noteOffset,
         isFirstRow: i == 0,
         isLastRow: end == song.measures.length,
-        measuresPerRow: measuresPerRow,
+        measuresPerRow: count, // use the actual count for this row
         previousMeasure: prevMeasure,
       ));
-      noteOffset += batch.fold(0, (s, m) => s + m.playableNotes.length);
+      noteOffset += batch.fold(0, (s, m) => s + m.notes.length);
       prevMeasure = batch.last;
+      i = end;
     }
     return rows;
   }
