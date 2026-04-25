@@ -31,6 +31,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   int _currentNoteIndex = 0;
   bool _micActive = false;
   String _detectedNote = '';
+  bool _isKeyboardInput = false;
   String? _statusMessage;
   StreamSubscription<String>? _noteSubscription;
   Timer? _clearNoteTimer;
@@ -70,7 +71,7 @@ class _PracticeScreenState extends State<PracticeScreen>
       _micActive = true;
       _statusMessage = null;
     });
-    _noteSubscription = _audio.noteStream.listen(_onNoteDetected);
+    _noteSubscription = _audio.noteStream.listen((note) => _onNoteDetected(note, fromKeyboard: false));
   }
 
   Future<void> _stopMic() async {
@@ -83,18 +84,24 @@ class _PracticeScreenState extends State<PracticeScreen>
     });
   }
 
-  void _onNoteDetected(String detectedNoteName) {
+  void _onNoteDetected(String detectedNoteName, {bool fromKeyboard = false}) {
     if (!mounted) return;
 
     if (detectedNoteName.isNotEmpty) {
       _clearNoteTimer?.cancel();
-      setState(() => _detectedNote = detectedNoteName);
+      setState(() {
+        _detectedNote = detectedNoteName;
+        _isKeyboardInput = fromKeyboard;
+      });
     } else {
       // Keep the last heard note visible for 2 seconds before clearing
       _clearNoteTimer?.cancel();
       _clearNoteTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
-          setState(() => _detectedNote = '');
+          setState(() {
+            _detectedNote = '';
+            _isKeyboardInput = false;
+          });
         }
       });
     }
@@ -202,7 +209,7 @@ class _PracticeScreenState extends State<PracticeScreen>
               event.physicalKey.debugName?.replaceAll(' ', '') ?? '';
 
           final isShift = HardwareKeyboard.instance.isShiftPressed;
-          final isCaps = HardwareKeyboard.instance.isCapsLockOn;
+          final isAlt = HardwareKeyboard.instance.isAltPressed;
 
           // Helper to find note by exact mapping string
           String? findNote(String mapping) {
@@ -215,15 +222,15 @@ class _PracticeScreenState extends State<PracticeScreen>
           String? noteName;
           if (isShift) {
             noteName = findNote('Shift+$physicalKeyName');
-          } else if (isCaps) {
-            noteName = findNote('CapsLock+$physicalKeyName');
+          } else if (isAlt) {
+            noteName = findNote('Alt+$physicalKeyName');
           }
 
           // Fallback to plain key if no modifier mapping found or no modifier active
           noteName ??= findNote(physicalKeyName);
 
           if (noteName != null) {
-            _onNoteDetected(noteName);
+            _onNoteDetected(noteName, fromKeyboard: true);
             return KeyEventResult.handled;
           }
 
@@ -290,6 +297,7 @@ class _PracticeScreenState extends State<PracticeScreen>
                 noteIndex: _currentNoteIndex,
                 total: _notes.length,
                 detectedNote: _detectedNote,
+                isKeyboardInput: _isKeyboardInput,
                 targetNoteName: NoteResolver.resolveTargetNote(
                   note: current,
                   activeScheme: provider.activeScheme,
@@ -336,6 +344,7 @@ class _CurrentNoteCard extends StatelessWidget {
   final int noteIndex;
   final int total;
   final String detectedNote;
+  final bool isKeyboardInput;
   final String targetNoteName;
   final Map<String, String> keyboardOverrides;
 
@@ -345,6 +354,7 @@ class _CurrentNoteCard extends StatelessWidget {
     required this.noteIndex,
     required this.total,
     required this.detectedNote,
+    required this.isKeyboardInput,
     required this.targetNoteName,
     required this.keyboardOverrides,
   });
@@ -362,7 +372,7 @@ class _CurrentNoteCard extends StatelessWidget {
     final cleanHint = keyboardHint
         ?.replaceAll('Key', '')
         .replaceAll('Shift+', '⇧')
-        .replaceAll('CapsLock+', '⇪');
+        .replaceAll('Alt+', '⌥');
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -441,7 +451,7 @@ class _CurrentNoteCard extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Hearing',
+                    isKeyboardInput ? 'Key' : 'Hearing',
                     style: TextStyle(
                       fontSize: 10,
                       color: isCorrect ? Colors.green.shade700 : Colors.orange.shade700,

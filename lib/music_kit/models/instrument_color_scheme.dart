@@ -228,7 +228,9 @@ class InstrumentColorScheme {
       'A5': 'Shift+KeyH',
       'A#5': 'Shift+KeyU',
       'B5': 'Shift+KeyJ',
-      'C6': 'Shift+KeyK',
+      'C6': 'Alt+KeyA',
+      'D6': 'Alt+KeyS',
+      'E6': 'Alt+KeyD',
     },
   );
 }
