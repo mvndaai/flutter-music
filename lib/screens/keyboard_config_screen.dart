@@ -18,6 +18,7 @@ class KeyboardConfigScreen extends StatefulWidget {
 class _KeyboardConfigScreenState extends State<KeyboardConfigScreen> {
   late Map<String, String> _overrides;
   String? _pendingNote;
+  String? _lastKey;
 
   @override
   void initState() {
@@ -145,13 +146,19 @@ class _KeyboardConfigScreenState extends State<KeyboardConfigScreen> {
         autofocus: true,
         onKeyEvent: (node, event) {
           if (event is! KeyDownEvent) return KeyEventResult.ignored;
-          if (_pendingNote == null) return KeyEventResult.ignored;
 
           final isShift = HardwareKeyboard.instance.isShiftPressed;
           final isAlt = HardwareKeyboard.instance.isAltPressed;
-          
           final physicalKeyName = event.physicalKey.debugName?.replaceAll(' ', '') ?? '';
           
+          setState(() {
+            _lastKey = physicalKeyName;
+            if (isShift) _lastKey = '⇧$physicalKeyName';
+            if (isAlt) _lastKey = '⌥$physicalKeyName';
+          });
+
+          if (_pendingNote == null) return KeyEventResult.ignored;
+
           String mapping = physicalKeyName;
           if (isShift) mapping = 'Shift+$physicalKeyName';
           else if (isAlt) mapping = 'Alt+$physicalKeyName';
@@ -190,15 +197,30 @@ class _KeyboardConfigScreenState extends State<KeyboardConfigScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(
-                _pendingNote == null
-                    ? 'Tap a note to change its keyboard mapping.'
-                    : 'Press a key on your keyboard for $_pendingNote...',
-                style: TextStyle(
-                  color: _pendingNote == null ? Colors.grey.shade600 : Theme.of(context).colorScheme.primary,
-                  fontWeight: _pendingNote == null ? FontWeight.normal : FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                children: [
+                  Text(
+                    _pendingNote == null
+                        ? 'Tap a note to change its keyboard mapping.'
+                        : 'Press a key on your keyboard for $_pendingNote...',
+                    style: TextStyle(
+                      color: _pendingNote == null
+                          ? Colors.grey.shade600
+                          : Theme.of(context).colorScheme.primary,
+                      fontWeight:
+                          _pendingNote == null ? FontWeight.normal : FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (_lastKey != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Last key pressed: ${_lastKey!.replaceAll('Key', '')}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                    ),
+                ],
               ),
             ),
             const Divider(height: 1),
@@ -224,7 +246,10 @@ class _KeyboardConfigScreenState extends State<KeyboardConfigScreen> {
                   if (hasExplicitMapping) {
                     displayMapping = mapping;
                   } else if (isUnset) {
-                    displayMapping = 'Unset';
+                    displayMapping =
+                        defaultMapping != null && defaultMapping.isNotEmpty
+                            ? 'Unset (Default: $defaultMapping)'
+                            : 'Unset';
                   } else if (!isStandard &&
                       defaultMapping != null &&
                       defaultMapping.isNotEmpty) {

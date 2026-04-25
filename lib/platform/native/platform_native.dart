@@ -55,9 +55,19 @@ class MobileTonePlayer implements PlatformTonePlayer {
     const fadeSamples = 441;
     for (int i = 0; i < numSamples; i++) {
       final t = i / sampleRate;
-      double amplitude = math.sin(2 * math.pi * frequency * t);
-      if (i < fadeSamples) amplitude *= i / fadeSamples;
-      else if (i > numSamples - fadeSamples) amplitude *= (numSamples - i) / fadeSamples;
+      // Triangle wave is louder than sine wave for the same peak amplitude.
+      double tNorm = (t * frequency) % 1.0;
+      double amplitude = (tNorm < 0.25)
+          ? 4 * tNorm
+          : (tNorm < 0.75)
+              ? 2 - 4 * tNorm
+              : 4 * tNorm - 4;
+
+      if (i < fadeSamples) {
+        amplitude *= i / fadeSamples;
+      } else if (i > numSamples - fadeSamples) {
+        amplitude *= (numSamples - i) / fadeSamples;
+      }
       bytes.setInt16(44 + i * 2, (amplitude * 32767).toInt(), Endian.little);
     }
     return bytes.buffer.asUint8List();

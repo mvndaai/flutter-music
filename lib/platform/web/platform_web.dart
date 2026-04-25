@@ -26,7 +26,7 @@ class WebTonePlayer implements PlatformTonePlayer {
       gainNode.connect(context.destination);
 
       oscillator.frequency.value = frequency;
-      oscillator.type = 'sine';
+      oscillator.type = 'triangle';
 
       // Set volume with envelope to avoid clicks
       final now = context.currentTime;
@@ -35,8 +35,8 @@ class WebTonePlayer implements PlatformTonePlayer {
 
       final gain = gainNode.gain;
       gain.setValueAtTime(0, now);
-      gain.linearRampToValueAtTime(0.3, now + fadeTime);
-      gain.setValueAtTime(0.3, now + duration - fadeTime);
+      gain.linearRampToValueAtTime(0.5, now + fadeTime);
+      gain.setValueAtTime(0.5, now + duration - fadeTime);
       gain.linearRampToValueAtTime(0, now + duration);
 
       oscillator.start(now);

@@ -34,6 +34,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   bool _micActive = false;
   String _detectedNote = '';
   bool _isKeyboardInput = false;
+  String _lastPhysicalKey = '';
   String? _statusMessage;
   StreamSubscription<String>? _noteSubscription;
   Timer? _clearNoteTimer;
@@ -104,6 +105,7 @@ class _PracticeScreenState extends State<PracticeScreen>
           setState(() {
             _detectedNote = '';
             _isKeyboardInput = false;
+            _lastPhysicalKey = '';
           });
         }
       });
@@ -235,6 +237,12 @@ class _PracticeScreenState extends State<PracticeScreen>
             if (midi >= 0) {
               _tonePlayer.playNote(MusicConstants.midiToFrequency(midi));
             }
+            setState(() {
+              String keyDisplay = physicalKeyName;
+              if (isShift) keyDisplay = '⇧$keyDisplay';
+              if (isAlt) keyDisplay = '⌥$keyDisplay';
+              _lastPhysicalKey = keyDisplay;
+            });
             _onNoteDetected(noteName, fromKeyboard: true);
             return KeyEventResult.handled;
           }
@@ -303,6 +311,7 @@ class _PracticeScreenState extends State<PracticeScreen>
                 total: _notes.length,
                 detectedNote: _detectedNote,
                 isKeyboardInput: _isKeyboardInput,
+                lastPhysicalKey: _lastPhysicalKey,
                 targetNoteName: NoteResolver.resolveTargetNote(
                   note: current,
                   activeScheme: provider.activeScheme,
@@ -348,6 +357,7 @@ class _CurrentNoteCard extends StatelessWidget {
   final int total;
   final String detectedNote;
   final bool isKeyboardInput;
+  final String lastPhysicalKey;
   final String targetNoteName;
   final Map<String, String> keyboardOverrides;
 
@@ -358,6 +368,7 @@ class _CurrentNoteCard extends StatelessWidget {
     required this.total,
     required this.detectedNote,
     required this.isKeyboardInput,
+    required this.lastPhysicalKey,
     required this.targetNoteName,
     required this.keyboardOverrides,
   });
@@ -454,7 +465,9 @@ class _CurrentNoteCard extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    isKeyboardInput ? 'Key' : 'Hearing',
+                    isKeyboardInput
+                        ? 'Key: ${lastPhysicalKey.replaceAll('Key', '')}'
+                        : 'Hearing',
                     style: TextStyle(
                       fontSize: 10,
                       color: isCorrect ? Colors.green.shade700 : Colors.orange.shade700,
