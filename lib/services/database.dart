@@ -38,6 +38,7 @@ class StringListConverter extends TypeConverter<List<String>, String> {
 @DriftDatabase(tables: [Songs])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(platform.openDatabaseConnection());
+  AppDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
   int get schemaVersion => 1;
