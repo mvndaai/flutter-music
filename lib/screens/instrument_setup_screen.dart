@@ -97,7 +97,6 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
     if (_isActionActive) {
       // Stop recording
       final key = await _audioRecorder.stopRecording();
-      
       setState(() {
         if (key != null && _pendingNote != null) {
           _noteSounds[_pendingNote!] = key;
@@ -169,9 +168,17 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
   @override
   Widget build(BuildContext context) {
     final Set<String> allNotes = {};
+
+    // Add enabled notes from standard octave range (skip disabled keys)
     for (int octave = 3; octave <= 6; octave++) {
-      for (final note in kNoteKeys) allNotes.add('$note$octave');
+      for (final note in kNoteKeys) {
+        if (!widget.scheme.disabledKeys.contains(note)) {
+          allNotes.add('$note$octave');
+        }
+      }
     }
+    
+    // Add notes with explicit overrides (even if they're disabled keys)
     allNotes.addAll(_keyboardOverrides.keys);
     allNotes.addAll(_noteSounds.keys);
     allNotes.addAll(_tuningOverrides.keys);
@@ -282,7 +289,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
                     onPlay: () {
                       final midi = MusicConstants.noteNameToMidi(note);
                       if (midi >= 0) {
-                        _tonePlayer.playNote(MusicConstants.midiToFrequency(midi), samplePath: _noteSounds[note]);
+                        _tonePlayer.playNote(MusicConstants.midiToFrequency(midi), samplePath: widget.scheme.getSamplePath(note));
                       }
                     },
                     onClear: () {
@@ -367,19 +374,30 @@ class _NoteConfigTile extends StatelessWidget {
     Widget? trailing;
 
     if (mode == SetupMode.keyboard) {
-      final displayMapping = KeyboardUtils.formatForDisplay(keyboardMapping);
-      subtitle = isPending ? 'WAITING FOR KEY...' : (displayMapping.isEmpty ? 'Not mapped' : displayMapping);
+      if (isPending) {
+        subtitle = 'WAITING FOR KEY...';
+      } else if (keyboardMapping?.isNotEmpty == true) {
+        subtitle = KeyboardUtils.formatForDisplay(keyboardMapping!);
+      } else {
+        // Check for default from Standard profile
+        final defaultMapping = scheme.effectiveKeyboardOverrides[note];
+        if (defaultMapping != null && defaultMapping.isNotEmpty) {
+          subtitle = 'Default: ${KeyboardUtils.formatForDisplay(defaultMapping)}';
+        } else {
+          subtitle = 'Not mapped';
+        }
+      }
     } else if (mode == SetupMode.sounds) {
-      subtitle = isActionActive ? 'RECORDING...' : (soundPath != null ? 'Recorded' : 'Default');
+      subtitle = isActionActive ? 'RECORDING...' : (soundPath?.isNotEmpty == true ? 'Recorded' : 'Default');
       trailing = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (soundPath != null) IconButton(icon: const Icon(Icons.play_arrow), onPressed: onPlay),
+          if (soundPath?.isNotEmpty == true) IconButton(icon: const Icon(Icons.play_arrow), onPressed: onPlay),
           IconButton(icon: Icon(isActionActive ? Icons.stop : Icons.mic), color: isActionActive ? Colors.red : null, onPressed: onAction),
         ],
       );
     } else if (mode == SetupMode.tuning) {
-      subtitle = isActionActive ? (liveDetection ?? 'Listening...') : (tunedTo != null ? 'Tuned to $tunedTo' : 'Standard');
+      subtitle = isActionActive ? (liveDetection ?? 'Listening...') : (tunedTo?.isNotEmpty == true ? 'Tuned to $tunedTo' : 'Standard');
       trailing = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -403,12 +421,18 @@ class _NoteConfigTile extends StatelessWidget {
           ),
         ),
         title: Text(note, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: TextStyle(color: isActionActive || isPending ? Theme.of(context).primaryColor : null)),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: isActionActive || isPending ? Theme.of(context).primaryColor : null,
+            fontStyle: subtitle.startsWith('Default:') ? FontStyle.italic : null,
+          ),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (trailing != null) trailing,
-            if ((keyboardMapping?.isNotEmpty == true || soundPath != null || tunedTo != null) && !isActionActive)
+            if ((keyboardMapping?.isNotEmpty == true || (soundPath?.isNotEmpty == true) || (tunedTo?.isNotEmpty == true)) && !isActionActive)
               IconButton(icon: const Icon(Icons.close, size: 20), onPressed: onClear),
           ],
         ),

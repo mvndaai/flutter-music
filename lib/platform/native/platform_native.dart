@@ -169,7 +169,15 @@ class NativeAudioRecorder implements PlatformAudioRecorder {
     _filePath = p.join(samplesDir, '$noteName.m4a');
     _isRecording = true;
 
-    await _recorder.start(const RecordConfig(), path: _filePath!);
+    // Start recording with explicit config to avoid "adjusted" log messages
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        numChannels: 1,
+        sampleRate: 48000,
+      ),
+      path: _filePath!,
+    );
   }
 
   @override

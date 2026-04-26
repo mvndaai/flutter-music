@@ -242,7 +242,7 @@ class _PracticeScreenState extends State<PracticeScreen>
             if (noteName != null) {
               final midi = MusicConstants.noteNameToMidi(noteName);
               if (midi >= 0) {
-                final samplePath = provider.activeScheme.noteSounds[noteName];
+                final samplePath = provider.activeScheme.getSamplePath(noteName);
                 _tonePlayer.stopNote(MusicConstants.midiToFrequency(midi), samplePath: samplePath);
               }
             }
@@ -267,7 +267,7 @@ class _PracticeScreenState extends State<PracticeScreen>
             _keyToNote[event.logicalKey] = noteName;
             final midi = MusicConstants.noteNameToMidi(noteName);
             if (midi >= 0) {
-              final samplePath = provider.activeScheme.noteSounds[noteName];
+              final samplePath = provider.activeScheme.getSamplePath(noteName);
               _tonePlayer.startNote(MusicConstants.midiToFrequency(midi), samplePath: samplePath);
             }
             setState(() {

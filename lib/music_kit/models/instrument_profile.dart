@@ -168,6 +168,26 @@ class InstrumentProfile {
     );
   }
 
+  /// Gets a sample path for a note, with fallback to C4 if the specific octave doesn't exist.
+  /// Returns null if no sample exists at all.
+  String? getSamplePath(String noteName) {
+    // Try the exact note first
+    final exactPath = noteSounds[noteName];
+    if (exactPath != null && exactPath.isNotEmpty) {
+      return exactPath;
+    }
+
+    // Fallback: try the same note in octave 4 (e.g., C5 -> C4)
+    final step = noteName.replaceAll(RegExp(r'\d'), '');
+    final fallbackNote = '$step' '4';
+    final fallbackPath = noteSounds[fallbackNote];
+    if (fallbackPath != null && fallbackPath.isNotEmpty) {
+      return fallbackPath;
+    }
+
+    return null;
+  }
+
   /// Returns a merged map of keyboard overrides, falling back to the standard profile.
   /// If only one octave is mapped in this profile, it spreads those mappings to all octaves.
   Map<String, String> get effectiveKeyboardOverrides {

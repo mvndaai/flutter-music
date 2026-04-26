@@ -225,8 +225,15 @@ class WebAudioRecorder implements PlatformAudioRecorder {
     _noteName = noteName;
     _isRecording = true;
 
-    // Start recording
-    await _recorder.start(const RecordConfig(), path: 'temp_recording.wav');
+    // Start recording with explicit config to avoid "adjusted" log messages
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.wav,
+        numChannels: 1,
+        sampleRate: 48000,
+      ),
+      path: 'temp_recording.wav',
+    );
 
     // Set 3-second hard limit
     _recordingTimer = Timer(const Duration(seconds: 3), () async {
