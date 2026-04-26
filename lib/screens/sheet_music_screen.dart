@@ -424,7 +424,10 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
         return KeyEventResult.ignored;
       },
       child: Scaffold(
-        appBar: mode == MusicDisplayMode.game ? null : AppBar(
+        extendBodyBehindAppBar: mode == MusicDisplayMode.game,
+        appBar: AppBar(
+          backgroundColor: mode == MusicDisplayMode.game ? Colors.transparent : null,
+          elevation: mode == MusicDisplayMode.game ? 0 : null,
           title: Text(widget.song.title),
           actions: [
             _ModeToggleButton(mode: mode, onModeChanged: provider.setDisplayMode),
@@ -465,7 +468,6 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                 activeNoteIndex: _activeNoteIndex,
                 detectedNote: _detectedNote,
                 scrollController: _gameScrollController,
-                onExit: () => provider.setDisplayMode(MusicDisplayMode.practice),
               ) : SheetMusicWidget(
                 song: widget.song,
                 activeNoteIndex: _activeNoteIndex,
@@ -541,9 +543,8 @@ class _GameView extends StatelessWidget {
   final int activeNoteIndex;
   final String detectedNote;
   final ScrollController scrollController;
-  final VoidCallback onExit;
 
-  const _GameView({required this.song, required this.activeNoteIndex, required this.detectedNote, required this.scrollController, required this.onExit});
+  const _GameView({required this.song, required this.activeNoteIndex, required this.detectedNote, required this.scrollController});
 
   @override
   Widget build(BuildContext context) {
@@ -626,7 +627,6 @@ class _GameView extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(top: 16, right: 16, child: SafeArea(child: IconButton.filledTonal(icon: const Icon(Icons.close), onPressed: onExit))),
         if (detectedNote.isNotEmpty)
           Positioned(
             bottom: 120, left: 0, right: 0,
