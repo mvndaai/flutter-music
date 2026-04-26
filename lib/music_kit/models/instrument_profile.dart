@@ -45,6 +45,9 @@ class InstrumentProfile {
   /// E.g. `{'C4': 'KeyA'}`.
   final Map<String, String> keyboardOverrides;
 
+  /// Optional mapping from note names to recorded sound file paths.
+  final Map<String, String> noteSounds;
+
   const InstrumentProfile({
     required this.id,
     required this.name,
@@ -57,6 +60,7 @@ class InstrumentProfile {
     this.disabledKeys = const {},
     this.tuningOverrides = const {},
     this.keyboardOverrides = const {},
+    this.noteSounds = const {},
   });
 
   /// Returns the color for a note given its [step] (C–B), [alter] (-1/0/+1),
@@ -122,6 +126,7 @@ class InstrumentProfile {
     Set<String>? disabledKeys,
     Map<String, String>? tuningOverrides,
     Map<String, String>? keyboardOverrides,
+    Map<String, String>? noteSounds,
     bool? isBuiltIn,
     bool? isImported,
   }) {
@@ -141,6 +146,7 @@ class InstrumentProfile {
       disabledKeys: disabledKeys ?? Set.from(this.disabledKeys),
       tuningOverrides: tuningOverrides ?? Map.from(this.tuningOverrides),
       keyboardOverrides: keyboardOverrides ?? Map.from(this.keyboardOverrides),
+      noteSounds: noteSounds ?? Map.from(this.noteSounds),
     );
   }
 
@@ -158,6 +164,7 @@ class InstrumentProfile {
       disabledKeys: disabledKeys,
       tuningOverrides: tuningOverrides,
       keyboardOverrides: keyboardOverrides,
+      noteSounds: noteSounds,
     );
   }
 
@@ -207,6 +214,7 @@ class InstrumentProfile {
               octaveOverrides.map((k, v) => MapEntry(k, v.toARGB32())),
         if (disabledKeys.isNotEmpty) 'disabledKeys': disabledKeys.toList(),
         if (keyboardOverrides.isNotEmpty) 'keyboardOverrides': keyboardOverrides,
+        if (noteSounds.isNotEmpty) 'noteSounds': noteSounds,
         // Skipped attributes: id, tuningOverrides, isBuiltIn, isImported
       };
 
@@ -217,6 +225,7 @@ class InstrumentProfile {
     final rawDisabled = json['disabledKeys'] as List<dynamic>? ?? [];
     final rawTuning = json['tuningOverrides'] as Map<String, dynamic>? ?? {};
     final rawKeyboard = json['keyboardOverrides'] as Map<String, dynamic>? ?? {};
+    final rawSounds = json['noteSounds'] as Map<String, dynamic>? ?? {};
     return InstrumentProfile(
       id: (json['id'] as String?) ?? fallbackId ?? const Uuid().v7(),
       name: json['name'] as String,
@@ -230,6 +239,7 @@ class InstrumentProfile {
       disabledKeys: rawDisabled.cast<String>().toSet(),
       tuningOverrides: rawTuning.cast<String, String>(),
       keyboardOverrides: rawKeyboard.cast<String, String>(),
+      noteSounds: rawSounds.cast<String, String>(),
     );
   }
 

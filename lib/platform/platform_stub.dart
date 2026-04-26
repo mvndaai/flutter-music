@@ -8,6 +8,9 @@ abstract class PlatformTonePlayer {
   Future<void> playTone(double frequency, int durationMs);
   void startTone(double frequency);
   void stopTone(double frequency);
+  Future<void> playSample(String path);
+  void startSample(String path);
+  void stopSample(String path);
   void dispose();
 }
 

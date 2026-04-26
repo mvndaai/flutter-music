@@ -18,6 +18,8 @@ class InstrumentProvider extends ChangeNotifier {
   static const String _themeModeKey = 'app_theme_mode';
   static const String _metronomeSoundKey = 'settings_metronome_sound';
   static const String _builtInKeyboardOverridesKey = 'color_scheme_builtin_keyboard';
+  static const String _builtInNoteSoundsKey = 'color_scheme_builtin_note_sounds';
+  static const String _builtInTuningOverridesKey = 'color_scheme_builtin_tuning';
 
   final Uuid _uuid = const Uuid();
 
@@ -109,14 +111,55 @@ class InstrumentProvider extends ChangeNotifier {
       // Apply persisted overrides for built-in schemes
       final prefs = await SharedPreferences.getInstance();
       final overridesRaw = prefs.getString(_builtInKeyboardOverridesKey);
+      final soundsRaw = prefs.getString(_builtInNoteSoundsKey);
+      final tuningRaw = prefs.getString(_builtInTuningOverridesKey);
+      
+      Map<String, dynamic> allOverrides = {};
       if (overridesRaw != null) {
-        final Map<String, dynamic> allOverrides = jsonDecode(overridesRaw);
-        for (var i = 0; i < _builtInSchemes.length; i++) {
-          final id = _builtInSchemes[i].id;
-          if (allOverrides.containsKey(id)) {
-            final overrides = Map<String, String>.from(allOverrides[id] as Map);
-            _builtInSchemes[i] = _builtInSchemes[i].copyWith(keyboardOverrides: overrides);
-          }
+        try {
+          allOverrides = jsonDecode(overridesRaw);
+        } catch (_) {}
+      }
+
+      Map<String, dynamic> allSounds = {};
+      if (soundsRaw != null) {
+        try {
+          allSounds = jsonDecode(soundsRaw);
+        } catch (_) {}
+      }
+
+      Map<String, dynamic> allTuning = {};
+      if (tuningRaw != null) {
+        try {
+          allTuning = jsonDecode(tuningRaw);
+        } catch (_) {}
+      }
+
+      for (var i = 0; i < _builtInSchemes.length; i++) {
+        final id = _builtInSchemes[i].id;
+        var updated = _builtInSchemes[i];
+        bool changed = false;
+
+        if (allOverrides.containsKey(id)) {
+          final overrides = Map<String, String>.from(allOverrides[id] as Map);
+          updated = updated.copyWith(keyboardOverrides: overrides);
+          changed = true;
+        }
+
+        if (allSounds.containsKey(id)) {
+          final sounds = Map<String, String>.from(allSounds[id] as Map);
+          updated = updated.copyWith(noteSounds: sounds);
+          changed = true;
+        }
+
+        if (allTuning.containsKey(id)) {
+          final tuning = Map<String, String>.from(allTuning[id] as Map);
+          updated = updated.copyWith(tuningOverrides: tuning);
+          changed = true;
+        }
+
+        if (changed) {
+          _builtInSchemes[i] = updated;
         }
       }
     } catch (e) {
@@ -280,6 +323,58 @@ class InstrumentProvider extends ChangeNotifier {
       }
       allOverrides[schemeId] = overrides;
       await prefs.setString(_builtInKeyboardOverridesKey, jsonEncode(allOverrides));
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateNoteSounds(String schemeId, Map<String, String> noteSounds) async {
+    final customIdx = _customSchemes.indexWhere((s) => s.id == schemeId);
+    if (customIdx >= 0) {
+      _customSchemes[customIdx] = _customSchemes[customIdx].copyWith(noteSounds: noteSounds);
+      await _persistCustom();
+      notifyListeners();
+      return;
+    }
+
+    final builtInIdx = _builtInSchemes.indexWhere((s) => s.id == schemeId);
+    if (builtInIdx >= 0) {
+      _builtInSchemes[builtInIdx] = _builtInSchemes[builtInIdx].copyWith(noteSounds: noteSounds);
+      final prefs = await SharedPreferences.getInstance();
+      final existingRaw = prefs.getString(_builtInNoteSoundsKey);
+      Map<String, dynamic> allNoteSounds = {};
+      if (existingRaw != null) {
+        try {
+          allNoteSounds = jsonDecode(existingRaw);
+        } catch (_) {}
+      }
+      allNoteSounds[schemeId] = noteSounds;
+      await prefs.setString(_builtInNoteSoundsKey, jsonEncode(allNoteSounds));
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateTuningOverrides(String schemeId, Map<String, String> tuning) async {
+    final customIdx = _customSchemes.indexWhere((s) => s.id == schemeId);
+    if (customIdx >= 0) {
+      _customSchemes[customIdx] = _customSchemes[customIdx].copyWith(tuningOverrides: tuning);
+      await _persistCustom();
+      notifyListeners();
+      return;
+    }
+
+    final builtInIdx = _builtInSchemes.indexWhere((s) => s.id == schemeId);
+    if (builtInIdx >= 0) {
+      _builtInSchemes[builtInIdx] = _builtInSchemes[builtInIdx].copyWith(tuningOverrides: tuning);
+      final prefs = await SharedPreferences.getInstance();
+      final existingRaw = prefs.getString(_builtInTuningOverridesKey);
+      Map<String, dynamic> allTuning = {};
+      if (existingRaw != null) {
+        try {
+          allTuning = jsonDecode(existingRaw);
+        } catch (_) {}
+      }
+      allTuning[schemeId] = tuning;
+      await prefs.setString(_builtInTuningOverridesKey, jsonEncode(allTuning));
       notifyListeners();
     }
   }

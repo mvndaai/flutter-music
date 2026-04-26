@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../music_kit/models/instrument_profile.dart';
 import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
-import 'keyboard_config_screen.dart';
+import 'instrument_setup_screen.dart';
 import 'instrument_editor_screen.dart';
 
 /// Screen for managing instrument profiles.
@@ -50,7 +50,11 @@ class InstrumentsScreen extends StatelessWidget {
                     ? null
                     : () => _shareScheme(context, scheme),
                 onConfigureKeyboard: () =>
-                    _openKeyboardConfig(context, scheme, provider),
+                    _openSetup(context, scheme, SetupMode.keyboard),
+                onConfigureSounds: () =>
+                    _openSetup(context, scheme, SetupMode.sounds),
+                onConfigureTuning: () =>
+                    _openSetup(context, scheme, SetupMode.tuning),
               );
             },
           );
@@ -129,15 +133,15 @@ class InstrumentsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openKeyboardConfig(
+  Future<void> _openSetup(
     BuildContext context,
     InstrumentProfile scheme,
-    InstrumentProvider provider,
+    SetupMode mode,
   ) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => KeyboardConfigScreen(scheme: scheme),
+        builder: (_) => InstrumentSetupScreen(scheme: scheme, initialMode: mode),
       ),
     );
   }
@@ -491,6 +495,8 @@ class _SchemeCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
   final VoidCallback onConfigureKeyboard;
+  final VoidCallback onConfigureSounds;
+  final VoidCallback onConfigureTuning;
 
   const _SchemeCard({
     required this.scheme,
@@ -501,6 +507,8 @@ class _SchemeCard extends StatelessWidget {
     this.onDelete,
     this.onShare,
     required this.onConfigureKeyboard,
+    required this.onConfigureSounds,
+    required this.onConfigureTuning,
   });
 
   @override
@@ -548,6 +556,8 @@ class _SchemeCard extends StatelessWidget {
                   if (v == 'delete') onDelete?.call();
                   if (v == 'share') onShare?.call();
                   if (v == 'keyboard') onConfigureKeyboard();
+                  if (v == 'sounds') onConfigureSounds();
+                  if (v == 'tuning') onConfigureTuning();
                 },
                 itemBuilder: (_) => [
                   if (onEdit != null)
@@ -558,6 +568,14 @@ class _SchemeCard extends StatelessWidget {
                     child: Text(scheme.isBuiltIn && scheme.id == 'builtin_black'
                         ? 'Configure Default Keyboard'
                         : 'Configure Keyboard'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'sounds',
+                    child: Text('Configure Note Sounds'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'tuning',
+                    child: Text('Configure Tuning'),
                   ),
                   if (onShare != null)
                     const PopupMenuItem(

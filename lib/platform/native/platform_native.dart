@@ -85,6 +85,25 @@ class MobileTonePlayer implements PlatformTonePlayer {
   }
 
   @override
+  Future<void> playSample(String path) async {
+    try {
+      await _player.play(DeviceFileSource(path));
+    } catch (e) {
+      // Audio is best-effort
+    }
+  }
+
+  @override
+  void startSample(String path) {
+    playSample(path);
+  }
+
+  @override
+  void stopSample(String path) {
+    _player.stop();
+  }
+
+  @override
   void dispose() => _player.dispose();
 }
 

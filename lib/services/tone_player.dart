@@ -13,20 +13,32 @@ class TonePlayer {
 
   bool get isMetronomeRunning => _isMetronomeRunning;
 
-  /// Plays a musical note at the given frequency.
-  Future<void> playNote(double frequency) async {
+  /// Plays a musical note at the given frequency or a recorded sample.
+  Future<void> playNote(double frequency, {String? samplePath}) async {
+    if (samplePath != null) {
+      await _platformPlayer.playSample(samplePath);
+      return;
+    }
     if (frequency <= 0) return;
     await _platformPlayer.playTone(frequency, 300);
   }
 
-  /// Starts playing a continuous note.
-  void startNote(double frequency) {
+  /// Starts playing a continuous note or recorded sample.
+  void startNote(double frequency, {String? samplePath}) {
+    if (samplePath != null) {
+      _platformPlayer.startSample(samplePath);
+      return;
+    }
     if (frequency <= 0) return;
     _platformPlayer.startTone(frequency);
   }
 
-  /// Stops a continuous note.
-  void stopNote(double frequency) {
+  /// Stops a continuous note or recorded sample.
+  void stopNote(double frequency, {String? samplePath}) {
+    if (samplePath != null) {
+      _platformPlayer.stopSample(samplePath);
+      return;
+    }
     if (frequency <= 0) return;
     _platformPlayer.stopTone(frequency);
   }

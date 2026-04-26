@@ -93,6 +93,28 @@ class WebTonePlayer implements PlatformTonePlayer {
   }
 
   @override
+  Future<void> playSample(String path) async {
+    // On web, path would likely be a blob URL. 
+    // This is a minimal implementation.
+    try {
+      final audio = web.HTMLAudioElement()..src = path;
+      audio.play();
+    } catch (e) {
+      developer.log('Web audio sample error', error: e, name: 'WebTonePlayer');
+    }
+  }
+
+  @override
+  void startSample(String path) {
+    playSample(path);
+  }
+
+  @override
+  void stopSample(String path) {
+    // Not easily implemented without tracking the AudioElement
+  }
+
+  @override
   void dispose() {
     try {
       for (final note in _activeNotes.values) {

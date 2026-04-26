@@ -30,7 +30,7 @@ class NoteWidget extends StatelessWidget {
     return NoteRenderer(
       note: note,
       instrument: instrumentProvider.activeScheme,
-      showNoteLabels: colorProvider.showNoteLabels,
+      showNoteLabels: instrumentProvider.showNoteLabels,
       isActive: isActive,
       isPast: isPast,
       size: size,

@@ -131,7 +131,9 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> {
     }
     
     // Play the note sound
-    _tonePlayer.playNote(note.frequency);
+    final provider = context.read<InstrumentProvider>();
+    final samplePath = provider.activeScheme.noteSounds[note.letterName];
+    _tonePlayer.playNote(note.frequency, samplePath: samplePath);
     
     // Calculate duration in milliseconds
     // Assuming quarter note = 1.0 duration, and tempo is in BPM

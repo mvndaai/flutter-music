@@ -34,6 +34,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   int _currentNoteIndex = 0;
   bool _micActive = false;
   String _detectedNote = '';
+  String? _statusMessage;
   bool _isKeyboardInput = false;
   String _lastPhysicalKey = '';
   final Map<LogicalKeyboardKey, String> _keyToNote = {};
@@ -241,7 +242,8 @@ class _PracticeScreenState extends State<PracticeScreen>
             if (noteName != null) {
               final midi = MusicConstants.noteNameToMidi(noteName);
               if (midi >= 0) {
-                _tonePlayer.stopNote(MusicConstants.midiToFrequency(midi));
+                final samplePath = provider.activeScheme.noteSounds[noteName];
+                _tonePlayer.stopNote(MusicConstants.midiToFrequency(midi), samplePath: samplePath);
               }
             }
             return KeyEventResult.ignored;
@@ -265,7 +267,8 @@ class _PracticeScreenState extends State<PracticeScreen>
             _keyToNote[event.logicalKey] = noteName;
             final midi = MusicConstants.noteNameToMidi(noteName);
             if (midi >= 0) {
-              _tonePlayer.startNote(MusicConstants.midiToFrequency(midi));
+              final samplePath = provider.activeScheme.noteSounds[noteName];
+              _tonePlayer.startNote(MusicConstants.midiToFrequency(midi), samplePath: samplePath);
             }
             setState(() {
               _lastPhysicalKey = KeyboardUtils.formatForDisplay(mapping);

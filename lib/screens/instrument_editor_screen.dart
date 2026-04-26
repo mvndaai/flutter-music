@@ -5,7 +5,7 @@ import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
 import '../widgets/note_color_picker.dart';
 import '../widgets/instrument_setup/add_key_wizard.dart';
-import '../widgets/instrument_setup/tuning_wizard.dart';
+import 'instrument_setup_screen.dart';
 import 'instruments_screen.dart'; // For _InstrumentIcon and _NameIconEmojiDialog which should probably also be moved or made public
 
 /// Screen for editing an instrument's colors, tuning, and metadata.
@@ -86,59 +86,20 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
   }
 
   Future<void> _tuneInstrument() async {
-    final chromaticBase = kNoteKeys
-        .where((n) => !_disabledKeys.contains(n))
-        .map((n) => '${n}4')
-        .toList();
-    final overrides = _octaveOverrides.keys.toList();
-
-    final allNotesToTune = <String>{...chromaticBase, ...overrides}.toList()
-      ..sort((a, b) => MusicConstants.noteNameToMidi(a)
-          .compareTo(MusicConstants.noteNameToMidi(b)));
-
-    if (allNotesToTune.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No keys available to tune')),
-      );
-      return;
-    }
-
-    final currentScheme = widget.scheme.copyWith(
-      name: _name,
-      icon: _icon,
-      colors: _colors,
-      octaveOverrides: _octaveOverrides,
-      tuningOverrides: _tuningOverrides,
-    );
-
-    final result = await showTuningWizard(
+    await Navigator.push(
       context,
-      notesToTune: allNotesToTune,
-      initialOverrides: _tuningOverrides,
-      colorProvider: (noteName) {
-        final match = RegExp(r'^([A-G])([#b])?(-?\d+)$').firstMatch(noteName);
-        if (match == null) return Colors.grey;
-        final step = match.group(1)!;
-        final acc = match.group(2) ?? '';
-        final octaveStr = match.group(3);
-        final octave = octaveStr != null ? int.tryParse(octaveStr) : null;
-        final alter = acc == '#' ? 1.0 : (acc == 'b' ? -1.0 : 0.0);
-
-        return currentScheme.colorForNote(
-          step,
-          alter,
-          octave: octave,
-          context: context,
-        );
-      },
+      MaterialPageRoute(
+        builder: (_) => InstrumentSetupScreen(
+          scheme: widget.scheme.copyWith(
+            name: _name,
+            icon: _icon,
+            colors: _colors,
+            octaveOverrides: _octaveOverrides,
+          ),
+          initialMode: SetupMode.tuning,
+        ),
+      ),
     );
-
-    if (result != null) {
-      setState(() {
-        _tuningOverrides = result.tuningOverrides;
-      });
-      _save();
-    }
   }
 
   Widget _buildChromaticRow(int index, InstrumentProfile currentScheme) {
