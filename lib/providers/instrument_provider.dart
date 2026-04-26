@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../music_kit/models/instrument_profile.dart';
+import '../music_kit/models/music_display_mode.dart';
 
 /// Manages the active instrument color scheme and the global note-label setting.
 class InstrumentProvider extends ChangeNotifier {
@@ -17,6 +18,7 @@ class InstrumentProvider extends ChangeNotifier {
   static const String _measuresPerRowKey = 'settings_measures_per_row';
   static const String _themeModeKey = 'app_theme_mode';
   static const String _metronomeSoundKey = 'settings_metronome_sound';
+  static const String _displayModeKey = 'settings_display_mode';
   static const String _builtInKeyboardOverridesKey = 'color_scheme_builtin_keyboard';
   static const String _builtInNoteSoundsKey = 'color_scheme_builtin_note_sounds';
   static const String _builtInTuningOverridesKey = 'color_scheme_builtin_tuning';
@@ -35,6 +37,7 @@ class InstrumentProvider extends ChangeNotifier {
   int _measuresPerRow = 4;
   ThemeMode _themeMode = ThemeMode.system;
   String _metronomeSound = 'tick';
+  MusicDisplayMode _displayMode = MusicDisplayMode.view;
 
   bool get showNoteLabels => _showNoteLabels;
   bool get showLetter => _showLetter;
@@ -45,6 +48,7 @@ class InstrumentProvider extends ChangeNotifier {
   String get activeId => _activeId;
   ThemeMode get themeMode => _themeMode;
   String get metronomeSound => _metronomeSound;
+  MusicDisplayMode get displayMode => _displayMode;
 
   List<InstrumentProfile> get allSchemes => [
         ..._builtInSchemes,
@@ -74,6 +78,9 @@ class InstrumentProvider extends ChangeNotifier {
     _coloredLabels = prefs.getBool(_coloredLabelsKey) ?? false;
     _measuresPerRow = prefs.getInt(_measuresPerRowKey) ?? 4;
     _metronomeSound = prefs.getString(_metronomeSoundKey) ?? 'tick';
+
+    final modeIndex = prefs.getInt(_displayModeKey) ?? 0;
+    _displayMode = MusicDisplayMode.values[modeIndex.clamp(0, MusicDisplayMode.values.length - 1)];
 
     final themeModeStr = prefs.getString(_themeModeKey) ?? 'system';
     _themeMode = switch (themeModeStr) {
@@ -274,6 +281,14 @@ class InstrumentProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_metronomeSoundKey, sound);
+  }
+
+  Future<void> setDisplayMode(MusicDisplayMode mode) async {
+    if (_displayMode == mode) return;
+    _displayMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_displayModeKey, mode.index);
   }
 
   Future<InstrumentProfile> createCustom({String? name, String? icon, String? emoji}) async {
