@@ -34,8 +34,8 @@ class InstrumentProfile {
   /// Optional octave-specific overrides, e.g. `{'C5': Color(0xFFE91E63)}`.
   final Map<String, Color> octaveOverrides;
 
-  /// Notes that are disabled for this instrument (e.g. no sharps on a simple recorder).
-  final Set<String> disabledKeys;
+  /// Notes that are hidden for this instrument (e.g. no sharps on a simple recorder).
+  final Set<String> hiddenKeys;
 
   /// Optional tuning overrides, mapping an intended note name to what is actually heard.
   /// E.g. `{'C5': 'B4'}` means when the app expects C5, it should listen for B4.
@@ -57,7 +57,7 @@ class InstrumentProfile {
     this.isBuiltIn = false,
     this.isImported = false,
     this.octaveOverrides = const {},
-    this.disabledKeys = const {},
+    this.hiddenKeys = const {},
     this.tuningOverrides = const {},
     this.keyboardOverrides = const {},
     this.noteSounds = const {},
@@ -123,7 +123,7 @@ class InstrumentProfile {
     String? emoji,
     Map<String, Color>? colors,
     Map<String, Color>? octaveOverrides,
-    Set<String>? disabledKeys,
+    Set<String>? hiddenKeys,
     Map<String, String>? tuningOverrides,
     Map<String, String>? keyboardOverrides,
     Map<String, String>? noteSounds,
@@ -143,7 +143,7 @@ class InstrumentProfile {
       isBuiltIn: isBuiltIn ?? this.isBuiltIn,
       isImported: isImported ?? this.isImported,
       octaveOverrides: octaveOverrides ?? Map.from(this.octaveOverrides),
-      disabledKeys: disabledKeys ?? Set.from(this.disabledKeys),
+      hiddenKeys: hiddenKeys ?? Set.from(this.hiddenKeys),
       tuningOverrides: tuningOverrides ?? Map.from(this.tuningOverrides),
       keyboardOverrides: keyboardOverrides ?? Map.from(this.keyboardOverrides),
       noteSounds: noteSounds ?? Map.from(this.noteSounds),
@@ -161,7 +161,7 @@ class InstrumentProfile {
       isBuiltIn: isBuiltIn,
       isImported: isImported,
       octaveOverrides: octaveOverrides,
-      disabledKeys: disabledKeys,
+      hiddenKeys: hiddenKeys,
       tuningOverrides: tuningOverrides,
       keyboardOverrides: keyboardOverrides,
       noteSounds: noteSounds,
@@ -232,7 +232,7 @@ class InstrumentProfile {
         if (octaveOverrides.isNotEmpty)
           'octaveOverrides':
               octaveOverrides.map((k, v) => MapEntry(k, v.toARGB32())),
-        if (disabledKeys.isNotEmpty) 'disabledKeys': disabledKeys.toList(),
+        if (hiddenKeys.isNotEmpty) 'hiddenKeys': hiddenKeys.toList(),
         if (keyboardOverrides.isNotEmpty) 'keyboardOverrides': keyboardOverrides,
         if (noteSounds.isNotEmpty) 'noteSounds': noteSounds,
         // Skipped attributes: id, tuningOverrides, isBuiltIn, isImported
@@ -256,7 +256,7 @@ class InstrumentProfile {
       colors: rawColors.map((k, v) => MapEntry(k, Color(v as int))),
       octaveOverrides:
           rawOverrides.map((k, v) => MapEntry(k, Color(v as int))),
-      disabledKeys: rawDisabled.cast<String>().toSet(),
+      hiddenKeys: rawDisabled.cast<String>().toSet(),
       tuningOverrides: rawTuning.cast<String, String>(),
       keyboardOverrides: rawKeyboard.cast<String, String>(),
       noteSounds: rawSounds.cast<String, String>(),

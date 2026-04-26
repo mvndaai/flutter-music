@@ -65,7 +65,6 @@ class _InstrumentIcon extends StatelessWidget {
 class _MusicEditorScreenState extends State<MusicEditorScreen> {
   late Song _song;
   int _selectedMeasureIndex = 0;
-  int _selectedNoteIndex = -1;
 
   // New note attributes
   String _nextStep = 'C';

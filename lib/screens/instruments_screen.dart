@@ -599,7 +599,7 @@ class _ColorSwatchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     // List of note names that have explicit colors or overrides
     final coloredNotes = kNoteKeys.where((n) => 
-      scheme.colors.containsKey(n) && !scheme.disabledKeys.contains(n)
+      scheme.colors.containsKey(n) && !scheme.hiddenKeys.contains(n)
     );
     
     // For overrides, we also check if the base chromatic note is disabled.
@@ -607,7 +607,7 @@ class _ColorSwatchRow extends StatelessWidget {
       final match = RegExp(r'^([A-G][#b]?)').firstMatch(key);
       if (match == null) return true;
       final baseNote = match.group(1)!;
-      return !scheme.disabledKeys.contains(baseNote);
+      return !scheme.hiddenKeys.contains(baseNote);
     }).toList()..sort();
 
     return Wrap(

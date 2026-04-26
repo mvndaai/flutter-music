@@ -1,6 +1,4 @@
 import '../models/song.dart';
-import '../models/measure.dart';
-import '../models/music_note.dart';
 
 /// Utility to generate MusicXML content from a [Song] model.
 class MusicXmlGenerator {

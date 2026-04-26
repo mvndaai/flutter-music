@@ -182,12 +182,12 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
       final octave = int.tryParse(note.replaceAll(RegExp(r'\D'), '')) ?? -1;
 
       final isOverride = _keyboardOverrides.containsKey(note) || _noteSounds.containsKey(note) || _tuningOverrides.containsKey(note);
-      final isDisabled = widget.scheme.disabledKeys.contains(step);
+      final isHidden = widget.scheme.hiddenKeys.contains(step);
       final isInStandardRange = octave >= 3 && octave <= 6;
 
-      if (!isDisabled && isInStandardRange) {
+      if (!isHidden && isInStandardRange) {
         enabledNotes.add(note);
-      } else if (isDisabled || isOverride) {
+      } else if (isHidden || isOverride) {
         hiddenNotes.add(note);
       }
     }
@@ -363,7 +363,7 @@ class _NoteConfigTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final step = note.replaceAll(RegExp(r'\d'), '');
-    final isDisabled = scheme.disabledKeys.contains(step);
+    final isHidden = scheme.hiddenKeys.contains(step);
     final color = scheme.colorForNote(step, 0, octave: int.tryParse(note.replaceAll(RegExp(r'\D'), '')), context: context);
     final textColor = color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
 
@@ -405,7 +405,7 @@ class _NoteConfigTile extends StatelessWidget {
     }
 
     return Opacity(
-      opacity: isDisabled ? 0.5 : 1.0,
+      opacity: isHidden ? 0.5 : 1.0,
       child: ListTile(
         selected: isPending,
         onTap: onTap,

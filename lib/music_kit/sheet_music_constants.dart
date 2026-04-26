@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 // ── Staff geometry constants ─────────────────────────────────────────────────
 
 /// Vertical distance (px) between adjacent staff lines.

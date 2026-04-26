@@ -20,7 +20,7 @@ class InstrumentEditorScreen extends StatefulWidget {
 class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
   late Map<String, Color> _colors;
   late Map<String, Color> _octaveOverrides;
-  late Set<String> _disabledKeys;
+  late Set<String> _hiddenKeys;
   late Map<String, String> _tuningOverrides;
   late String _name;
   late String? _icon;
@@ -31,7 +31,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
     super.initState();
     _colors = Map.from(widget.scheme.colors);
     _octaveOverrides = Map.from(widget.scheme.octaveOverrides);
-    _disabledKeys = Set.from(widget.scheme.disabledKeys);
+    _hiddenKeys = Set.from(widget.scheme.hiddenKeys);
     _tuningOverrides = Map.from(widget.scheme.tuningOverrides);
     _name = widget.scheme.name;
     _icon = widget.scheme.icon;
@@ -46,7 +46,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
       name: _name,
       colors: _colors,
       octaveOverrides: _octaveOverrides,
-      disabledKeys: _disabledKeys,
+      hiddenKeys: _hiddenKeys,
       tuningOverrides: _tuningOverrides,
     );
     await context.read<InstrumentProvider>().updateCustom(updated);
@@ -105,7 +105,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
   Widget _buildChromaticRow(int index, InstrumentProfile currentScheme) {
     final note = kNoteKeys[index];
     final color = _colors[note] ?? currentScheme.colorForNote(note, 0, context: context);
-    final isDisabled = _disabledKeys.contains(note);
+    final isHidden = _hiddenKeys.contains(note);
     
     // Check if there is a tuning override for the base note (using octave 4 as reference)
     final tunedTo = _tuningOverrides['${note}4'];
@@ -115,7 +115,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
         : Colors.white;
 
     return Opacity(
-      opacity: isDisabled ? 0.4 : 1.0,
+      opacity: isHidden ? 0.4 : 1.0,
       child: ListTile(
         leading: Container(
           width: 48,
@@ -155,8 +155,8 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
           ],
         ),
         subtitle: Text(
-          isDisabled
-              ? 'Disabled for this instrument'
+          isHidden
+              ? 'Hidden for this instrument'
               : '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0').substring(2)}',
           style: const TextStyle(fontSize: 12),
         ),
@@ -164,13 +164,13 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Switch(
-              value: !isDisabled,
+              value: !isHidden,
               onChanged: (val) {
                 setState(() {
                   if (val) {
-                    _disabledKeys.remove(note);
+                    _hiddenKeys.remove(note);
                   } else {
-                    _disabledKeys.add(note);
+                    _hiddenKeys.add(note);
                   }
                 });
                 _save();
@@ -179,7 +179,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
             const Icon(Icons.color_lens_outlined),
           ],
         ),
-        onTap: isDisabled
+        onTap: isHidden
             ? null
             : () async {
                 final picked = await showNoteColorPicker(
@@ -206,7 +206,7 @@ class _InstrumentEditorScreenState extends State<InstrumentEditorScreen> {
       emoji: _emoji,
       colors: _colors,
       octaveOverrides: _octaveOverrides,
-      disabledKeys: _disabledKeys,
+      hiddenKeys: _hiddenKeys,
       tuningOverrides: _tuningOverrides,
     );
     final overrideKeys = _octaveOverrides.keys.toList()..sort();
