@@ -396,17 +396,27 @@ class _PracticeScreenState extends State<PracticeScreen>
             // Sheet music (scrollable or game mode)
             Expanded(
               child: _gameModeEnabled
-                  ? RotatedBox(
-                      quarterTurns: 3,
-                      child: SheetMusicWidget(
-                        song: _gameModeFilteredSong(),
-                        activeNoteIndex: _gameModeNoteIndex(),
-                        showSolfege: provider.showSolfege,
-                        showLetter: provider.showLetter,
-                        labelsBelow: provider.labelsBelow,
-                        coloredLabels: provider.coloredLabels,
-                        measuresPerRow: 2,
-                        showHeader: false,
+                  ? ClipRect(
+                      child: Transform(
+                        // Perspective: bottom (current notes) appears wider/closer,
+                        // top (upcoming notes) narrower/farther — highway effect.
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.003) // perspective depth
+                          ..rotateX(0.4), // tilt top away from viewer
+                        alignment: Alignment.bottomCenter,
+                        child: RotatedBox(
+                          quarterTurns: 3,
+                          child: SheetMusicWidget(
+                            song: _gameModeFilteredSong(),
+                            activeNoteIndex: _gameModeNoteIndex(),
+                            showSolfege: provider.showSolfege,
+                            showLetter: provider.showLetter,
+                            labelsBelow: provider.labelsBelow,
+                            coloredLabels: provider.coloredLabels,
+                            measuresPerRow: 2,
+                            showHeader: false,
+                          ),
+                        ),
                       ),
                     )
                   : SheetMusicWidget(
