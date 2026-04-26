@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../music_kit/models/song.dart';
+import '../music_kit/models/measure.dart';
 import '../music_kit/models/music_note.dart';
 import '../providers/instrument_provider.dart';
 import '../services/pitch_detection_service.dart';
@@ -12,6 +13,7 @@ import '../music_kit/sheet_music_constants.dart';
 import '../music_kit/utils/music_constants.dart';
 import '../music_kit/utils/keyboard_utils.dart';
 import '../widgets/sheet_music_widget.dart';
+import '../music_kit/widgets/staff_painter.dart';
 import '../music_kit/utils/note_resolver.dart';
 import '../widgets/note_settings_sheet.dart';
 
@@ -498,9 +500,8 @@ class _PracticeScreenState extends State<PracticeScreen>
                                   Colors.transparent,
                                   Colors.white,
                                   Colors.white,
-                                  Colors.transparent,
                                 ],
-                                stops: [0.0, 0.15, 0.85, 1.0],
+                                stops: [0.0, 0.1, 1.0],
                               ).createShader(bounds);
                             },
                             blendMode: BlendMode.dstIn,
@@ -509,8 +510,8 @@ class _PracticeScreenState extends State<PracticeScreen>
                                 // Perspective: bottom (current notes) appears wider/closer,
                                 // top (upcoming notes) narrower/farther — highway effect.
                                 transform: Matrix4.identity()
-                                  ..setEntry(3, 2, 0.0008) // subtle perspective depth
-                                  ..rotateX(-0.2), // gentle tilt
+                                  ..setEntry(3, 2, 0.001) // perspective depth
+                                  ..rotateX(-0.3), // tilt
                                 alignment: Alignment.bottomCenter,
                                 child: SingleChildScrollView(
                                   controller: _gameScrollController,
@@ -535,6 +536,60 @@ class _PracticeScreenState extends State<PracticeScreen>
                                             scrollable: false,
                                             labelRotation: math.pi / 2, // Keep text right-way up
                                           ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Floating Clef and Time signature at the bottom
+                        Positioned(
+                          bottom: 0, 
+                          left: 0,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Transform(
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.001)
+                                ..rotateX(-0.3),
+                              alignment: Alignment.bottomCenter,
+                              child: Transform.scale(
+                                scaleX: 2.2,
+                                child: RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: kClefW + 10,
+                                      height: kRowH,
+                                      child: CustomPaint(
+                                        painter: StaffPainter(
+                                          row: StaffRowData(
+                                            measures: [
+                                              Measure(
+                                                number: 0,
+                                                notes: [],
+                                                beats: widget.song.measures.isNotEmpty ? widget.song.measures[0].beats : 4,
+                                                beatType: widget.song.measures.isNotEmpty ? widget.song.measures[0].beatType : 4,
+                                              )
+                                            ],
+                                            firstNoteIndex: 0,
+                                            isFirstRow: true,
+                                            isLastRow: false,
+                                            measuresPerRow: 1,
+                                          ),
+                                          activeNoteIndex: -1,
+                                          showSolfege: false,
+                                          showLetter: false,
+                                          labelsBelow: false,
+                                          coloredLabels: false,
+                                          instrument: provider.activeScheme,
+                                          showNoteLabels: false,
+                                          context: context,
+                                          labelRotation: math.pi / 2,
+                                          showStaffLines: false, // Don't draw extra lines
                                         ),
                                       ),
                                     ),

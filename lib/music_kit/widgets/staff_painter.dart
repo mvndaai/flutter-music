@@ -38,6 +38,7 @@ class StaffPainter extends CustomPainter {
   final bool showNoteLabels;
   final BuildContext context;
   final double labelRotation;
+  final bool showStaffLines;
 
   StaffPainter({
     required this.row,
@@ -52,6 +53,7 @@ class StaffPainter extends CustomPainter {
     required this.showNoteLabels,
     required this.context,
     this.labelRotation = 0,
+    this.showStaffLines = true,
   });
 
   @override
@@ -67,7 +69,8 @@ class StaffPainter extends CustomPainter {
       old.row != row ||
       old.instrument != instrument ||
       old.showNoteLabels != showNoteLabels ||
-      old.labelRotation != labelRotation;
+      old.labelRotation != labelRotation ||
+      old.showStaffLines != showStaffLines;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -97,7 +100,9 @@ class StaffPainter extends CustomPainter {
       totalStaffW += w;
     }
 
-    _drawStaffLines(canvas, totalStaffW, linePaint);
+    if (showStaffLines) {
+      _drawStaffLines(canvas, totalStaffW, linePaint);
+    }
 
     int noteOffset = row.firstNoteIndex;
     Measure? currentPrevMeasure = row.previousMeasure;
@@ -158,9 +163,9 @@ class StaffPainter extends CustomPainter {
       currentPrevMeasure = m;
 
       final isLastMeasureInRow = mi == row.measures.length - 1;
-      if (isLastMeasureInRow && row.isLastRow) {
+      if (isLastMeasureInRow && row.isLastRow && showStaffLines) {
         _drawDoubleBarLine(canvas, x, clefColor);
-      } else {
+      } else if (showStaffLines) {
         final bp = Paint()
           ..color = clefColor.withValues(alpha: 0.6)
           ..strokeWidth = isLastMeasureInRow ? 2.0 : 1.2;
