@@ -5,7 +5,6 @@ import '../music_kit/models/song.dart';
 import '../services/musicxml_parser.dart';
 import '../services/storage_service.dart';
 import '../services/cloud_service.dart';
-import '../services/database.dart' hide Song;
 
 /// Manages the list of songs and loading/saving operations.
 class SongProvider extends ChangeNotifier {

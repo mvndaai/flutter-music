@@ -34,3 +34,23 @@ QueryExecutor openDatabaseConnection() {
 Future<String?> getSamplesDirectory(String instrumentId) {
   throw UnimplementedError('getSamplesDirectory has not been implemented on this platform.');
 }
+
+/// Platform-specific audio recorder interface.
+abstract class PlatformAudioRecorder {
+  /// Starts recording audio for the given note.
+  Future<void> startRecording(String instrumentId, String noteName);
+  
+  /// Stops recording and returns the storage key/path.
+  Future<String?> stopRecording();
+  
+  /// Whether recording is currently active.
+  bool get isRecording;
+  
+  /// Disposes resources.
+  void dispose();
+}
+
+/// Creates a platform-specific audio recorder.
+PlatformAudioRecorder createAudioRecorder() {
+  throw UnsupportedError('Cannot create audio recorder without platform implementation');
+}

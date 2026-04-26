@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -8,7 +7,10 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:record/record.dart';
 import '../platform_stub.dart';
+
+export '../platform_stub.dart';
 
 /// Mobile implementation (Android, iOS) using audioplayers and file_picker.
 class MobileTonePlayer implements PlatformTonePlayer {
@@ -140,3 +142,49 @@ Future<String?> getSamplesDirectory(String instrumentId) async {
   }
   return folder.path;
 }
+
+/// Native audio recorder that saves to file system.
+class NativeAudioRecorder implements PlatformAudioRecorder {
+  final AudioRecorder _recorder = AudioRecorder();
+  String? _filePath;
+  bool _isRecording = false;
+
+  @override
+  bool get isRecording => _isRecording;
+
+  @override
+  Future<void> startRecording(String instrumentId, String noteName) async {
+    if (_isRecording) return;
+
+    final hasPermission = await _recorder.hasPermission();
+    if (!hasPermission) {
+      throw Exception('Microphone permission not granted');
+    }
+
+    final samplesDir = await getSamplesDirectory(instrumentId);
+    if (samplesDir == null) {
+      throw Exception('Storage not available');
+    }
+
+    _filePath = p.join(samplesDir, '$noteName.m4a');
+    _isRecording = true;
+
+    await _recorder.start(const RecordConfig(), path: _filePath!);
+  }
+
+  @override
+  Future<String?> stopRecording() async {
+    if (!_isRecording) return null;
+
+    _isRecording = false;
+    await _recorder.stop();
+    return _filePath;
+  }
+
+  @override
+  void dispose() {
+    _recorder.dispose();
+  }
+}
+
+PlatformAudioRecorder createAudioRecorder() => NativeAudioRecorder();

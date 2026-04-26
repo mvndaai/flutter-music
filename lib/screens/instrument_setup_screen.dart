@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:record/record.dart';
-import 'package:path/path.dart' as p;
 import '../music_kit/models/instrument_profile.dart';
 import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
@@ -35,7 +32,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
   late Map<String, String> _noteSounds;
   late Map<String, String> _tuningOverrides;
 
-  final AudioRecorder _recorder = AudioRecorder();
+  final platform.PlatformAudioRecorder _audioRecorder = platform.createAudioRecorder();
   final TonePlayer _tonePlayer = TonePlayer();
   final PitchDetectionService _pitchService = PitchDetectionService();
   StreamSubscription<String>? _pitchSub;
@@ -55,7 +52,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
 
   @override
   void dispose() {
-    _recorder.dispose();
+    _audioRecorder.dispose();
     _tonePlayer.dispose();
     _pitchSub?.cancel();
     _pitchService.dispose();
@@ -98,47 +95,34 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
 
   Future<void> _toggleRecording(String note) async {
     if (_isActionActive) {
-      final path = await _recorder.stop();
+      // Stop recording
+      final key = await _audioRecorder.stopRecording();
+      
       setState(() {
-        if (path != null && _pendingNote != null) _noteSounds[_pendingNote!] = path;
+        if (key != null && _pendingNote != null) {
+          _noteSounds[_pendingNote!] = key;
+        }
         _isActionActive = false;
         _pendingNote = null;
       });
       _save();
     } else {
-      if (kIsWeb) {
-        // Audio recording is not supported on web
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Audio recording is not available on web'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-        return;
-      }
-      
-      if (await _recorder.hasPermission()) {
-        final samplesDir = await platform.getSamplesDirectory(widget.scheme.id);
-        if (samplesDir == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Storage not available on this platform'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-          return;
-        }
-        
-        final filePath = p.join(samplesDir, '$note.m4a');
-        await _recorder.start(const RecordConfig(), path: filePath);
+      // Start recording
+      try {
+        await _audioRecorder.startRecording(widget.scheme.id, note);
         setState(() {
           _pendingNote = note;
           _isActionActive = true;
         });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to start recording: $e'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     }
   }

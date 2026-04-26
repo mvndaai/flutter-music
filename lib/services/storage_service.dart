@@ -1,6 +1,5 @@
 import '../music_kit/models/song.dart';
 import 'database.dart';
-import 'package:drift/drift.dart';
 
 /// Manages local persistence of song metadata and tags using Drift (SQLite).
 class StorageService {
