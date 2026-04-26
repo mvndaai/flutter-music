@@ -343,9 +343,9 @@ class MusicPdfService {
       final displayNotes =
           measure.notes.where((n) => !n.isChordContinuation).toList();
       
-      final bool hasTimeSig = (currentPrevMeasure == null || 
-          measure.beats != currentPrevMeasure.beats || 
-          measure.beatType != currentPrevMeasure.beatType);
+      final bool hasTimeSig = currentPrevMeasure == null ||
+          (measure.beats != currentPrevMeasure.beats ||
+              measure.beatType != currentPrevMeasure.beatType);
 
       final noteHeadWidth = ls * 1.56; // Matching kNRx * 2 / kLS ratio
 
