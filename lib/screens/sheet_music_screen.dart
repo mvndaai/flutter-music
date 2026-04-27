@@ -52,6 +52,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
   Timer? _clearNoteTimer;
   final ScrollController _gameScrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  MusicDisplayMode? _lastMode;
 
   List<MusicNote> get _notes => widget.song.allNotes;
   MusicNote? get _currentNote => _activeNoteIndex < _notes.length ? _notes[_activeNoteIndex] : null;
@@ -373,6 +374,17 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
     final provider = context.watch<InstrumentProvider>();
     final keyboardProvider = context.watch<KeyboardProvider>();
     final mode = provider.displayMode;
+
+    // Detect mode change to trigger scroll
+    if (_lastMode != mode) {
+      _lastMode = mode;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && mode == MusicDisplayMode.game) {
+          _scrollToCurrentNoteSmooth();
+        }
+      });
+    }
+
     final current = _currentNote;
     final progress = _notes.isEmpty ? 0.0 : (_activeNoteIndex / _notes.length).clamp(0.0, 1.0);
 
@@ -508,6 +520,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                 detectedNote: _detectedNote,
                 scrollController: _gameScrollController,
               ) : SheetMusicWidget(
+                key: ValueKey(mode),
                 song: widget.song,
                 activeNoteIndex: _activeNoteIndex,
                 showSolfege: provider.showSolfege,
