@@ -135,10 +135,10 @@ class _UploadScreenState extends State<UploadScreen>
         bottom: TabBar(
           controller: _tab,
           tabs: const [
+            Tab(icon: Icon(Icons.library_music), text: 'Libraries'),
             Tab(icon: Icon(Icons.edit), text: 'Create'),
             Tab(icon: Icon(Icons.upload_file), text: 'Upload File'),
             Tab(icon: Icon(Icons.cloud_download), text: 'From URL'),
-            Tab(icon: Icon(Icons.library_music), text: 'Libraries'),
           ],
         ),
       ),
@@ -147,6 +147,10 @@ class _UploadScreenState extends State<UploadScreen>
           : TabBarView(
               controller: _tab,
               children: [
+                _LibraryTab(
+                  scrollController: _libraryScrollController,
+                  onSongAdded: (title) => _showSuccess(title),
+                ),
                 const _CreateTab(),
                 _FileUploadTab(
                   scrollController: _fileScrollController,
@@ -169,10 +173,7 @@ class _UploadScreenState extends State<UploadScreen>
                   onRemoveTag: (t) => setState(() => _tags.remove(t)),
                   error: _tab.index == 2 ? _error : null,
                 ),
-                _LibraryTab(
-                  scrollController: _libraryScrollController,
-                  onSongAdded: (title) => _showSuccess(title),
-                ),
+
               ],
             ),
     );
