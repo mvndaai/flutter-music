@@ -160,42 +160,57 @@ class NoteSettingsSheet extends StatelessWidget {
                     ),
 
                     // 6. Letters
-                    SwitchListTile(
-                      title: const Text('Letters'),
-                      subtitle: const Text('Show letter names on notes (A, B, C…)'),
+                    _SegmentedSetting<bool>(
+                      title: 'Note Letters (A, B, C…)',
                       value: provider.showLetter,
+                      options: const [
+                        (value: true, label: 'Show', icon: null),
+                        (value: false, label: 'Hide', icon: null),
+                      ],
                       onChanged: (v) => provider.setShowLetter(v),
                     ),
 
                     // 7. Solfege
-                    SwitchListTile(
-                      title: const Text('Solfège'),
-                      subtitle: const Text('Show solfège names on notes (Do, Re, Mi…)'),
+                    _SegmentedSetting<bool>(
+                      title: 'Solfège Names (Do, Re, Mi…)',
                       value: provider.showSolfege,
+                      options: const [
+                        (value: true, label: 'Show', icon: null),
+                        (value: false, label: 'Hide', icon: null),
+                      ],
                       onChanged: (v) => provider.setShowSolfege(v),
                     ),
 
                     // 8. Labels below notes
-                    SwitchListTile(
-                      title: const Text('Labels Below Notes'),
-                      subtitle: const Text('Show labels under notes instead of inside'),
+                    _SegmentedSetting<bool>(
+                      title: 'Label Position',
                       value: provider.labelsBelow,
+                      options: const [
+                        (value: true, label: 'Below Note', icon: null),
+                        (value: false, label: 'Inside Note', icon: null),
+                      ],
                       onChanged: (v) => provider.setLabelsBelow(v),
                     ),
 
                     // 9. Colored Labels
-                    SwitchListTile(
-                      title: const Text('Colored Labels'),
-                      subtitle: const Text('Match label color to note color'),
+                    _SegmentedSetting<bool>(
+                      title: 'Label Color',
                       value: provider.coloredLabels,
+                      options: const [
+                        (value: true, label: 'Match Note', icon: null),
+                        (value: false, label: 'Standard', icon: null),
+                      ],
                       onChanged: (v) => provider.setColoredLabels(v),
                     ),
 
                     // 10. Show Legend
-                    SwitchListTile(
-                      title: const Text('Show Legend'),
-                      subtitle: const Text('Show the color key at the top'),
+                    _SegmentedSetting<bool>(
+                      title: 'Top Color Legend',
                       value: provider.showLegend,
+                      options: const [
+                        (value: true, label: 'Show', icon: null),
+                        (value: false, label: 'Hide', icon: null),
+                      ],
                       onChanged: (v) => provider.setShowLegend(v),
                     ),
 
@@ -257,31 +272,6 @@ class _SegmentedSetting<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (options.length > 3) {
-      return ListTile(
-        title: Text(title),
-        trailing: DropdownButton<T>(
-          value: value,
-          underline: const SizedBox.shrink(),
-          items: options
-              .map((opt) => DropdownMenuItem(
-                    value: opt.value,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (opt.icon != null) ...[Icon(opt.icon, size: 20), const SizedBox(width: 10)],
-                        Text(opt.label),
-                      ],
-                    ),
-                  ))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
