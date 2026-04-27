@@ -17,6 +17,9 @@ class UploadScreen extends StatefulWidget {
 class _UploadScreenState extends State<UploadScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
+  final ScrollController _fileScrollController = ScrollController();
+  final ScrollController _urlScrollController = ScrollController();
+  final ScrollController _libraryScrollController = ScrollController();
   final TextEditingController _urlController = TextEditingController();
   final List<String> _tags = [];
   bool _loading = false;
@@ -33,6 +36,9 @@ class _UploadScreenState extends State<UploadScreen>
   @override
   void dispose() {
     _tab.dispose();
+    _fileScrollController.dispose();
+    _urlScrollController.dispose();
+    _libraryScrollController.dispose();
     _urlController.dispose();
     super.dispose();
   }
@@ -142,6 +148,7 @@ class _UploadScreenState extends State<UploadScreen>
               children: [
                 const _CreateTab(),
                 _FileUploadTab(
+                  scrollController: _fileScrollController,
                   pickedFileName: _pickedFileName,
                   onPickFile: _pickFile,
                   onUpload: _uploadFile,
@@ -152,6 +159,7 @@ class _UploadScreenState extends State<UploadScreen>
                   error: _tab.index == 1 ? _error : null,
                 ),
                 _UrlTab(
+                  scrollController: _urlScrollController,
                   controller: _urlController,
                   onFetch: _fetchUrl,
                   tags: _tags,
@@ -161,6 +169,7 @@ class _UploadScreenState extends State<UploadScreen>
                   error: _tab.index == 2 ? _error : null,
                 ),
                 _LibraryTab(
+                  scrollController: _libraryScrollController,
                   onSongAdded: (title) => _showSuccess(title),
                 ),
               ],
@@ -301,6 +310,7 @@ class _TagsSectionState extends State<_TagsSection> {
 }
 
 class _FileUploadTab extends StatelessWidget {
+  final ScrollController scrollController;
   final String? pickedFileName;
   final VoidCallback onPickFile;
   final VoidCallback onUpload;
@@ -311,6 +321,7 @@ class _FileUploadTab extends StatelessWidget {
   final String? error;
 
   const _FileUploadTab({
+    required this.scrollController,
     this.pickedFileName,
     required this.onPickFile,
     required this.onUpload,
@@ -324,7 +335,7 @@ class _FileUploadTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      primary: true,
+      controller: scrollController,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -385,6 +396,7 @@ class _FileUploadTab extends StatelessWidget {
 }
 
 class _UrlTab extends StatelessWidget {
+  final ScrollController scrollController;
   final TextEditingController controller;
   final VoidCallback onFetch;
   final List<String> tags;
@@ -394,6 +406,7 @@ class _UrlTab extends StatelessWidget {
   final String? error;
 
   const _UrlTab({
+    required this.scrollController,
     required this.controller,
     required this.onFetch,
     required this.tags,
@@ -406,7 +419,7 @@ class _UrlTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      primary: true,
+      controller: scrollController,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -474,9 +487,13 @@ class _LibraryEntry {
 }
 
 class _LibraryTab extends StatefulWidget {
+  final ScrollController scrollController;
   final void Function(String title) onSongAdded;
 
-  const _LibraryTab({required this.onSongAdded});
+  const _LibraryTab({
+    required this.scrollController,
+    required this.onSongAdded,
+  });
 
   @override
   State<_LibraryTab> createState() => _LibraryTabState();
@@ -628,7 +645,7 @@ class _LibraryTabState extends State<_LibraryTab>
           child: allAvailable.isEmpty
               ? const Center(child: Text('No libraries enabled'))
               : ListView.builder(
-                  primary: true,
+                  controller: widget.scrollController,
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final entry = filtered[index];
