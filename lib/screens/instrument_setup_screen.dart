@@ -9,8 +9,10 @@ import '../music_kit/utils/keyboard_utils.dart';
 import '../services/tone_player.dart';
 import '../services/pitch_detection_service.dart';
 import '../platform/platform.dart' as platform;
+import '../widgets/note_color_picker.dart';
+import 'instruments_screen.dart';
 
-enum SetupMode { tuning, keyboard, sounds }
+enum SetupMode { visuals, visibility, tuning, keyboard, sounds }
 
 class InstrumentSetupScreen extends StatefulWidget {
   final InstrumentProfile scheme;
@@ -19,7 +21,7 @@ class InstrumentSetupScreen extends StatefulWidget {
   const InstrumentSetupScreen({
     super.key,
     required this.scheme,
-    this.initialMode = SetupMode.tuning,
+    this.initialMode = SetupMode.visuals,
   });
 
   @override
@@ -28,9 +30,17 @@ class InstrumentSetupScreen extends StatefulWidget {
 
 class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with SingleTickerProviderStateMixin {
   late SetupMode _mode;
+  int? _selectedOctave; // null means "Default"
+
+  late Map<String, Color> _colors;
+  late Map<String, Color> _octaveOverrides;
+  late Set<String> _hiddenKeys;
   late Map<String, String> _keyboardOverrides;
   late Map<String, String> _noteSounds;
   late Map<String, String> _tuningOverrides;
+  late String _name;
+  late String? _icon;
+  late String? _emoji;
 
   final platform.PlatformAudioRecorder _audioRecorder = platform.createAudioRecorder();
   final TonePlayer _tonePlayer = TonePlayer();
@@ -44,10 +54,22 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode;
+    _mode = widget.scheme.isBuiltIn && widget.initialMode == SetupMode.visuals
+        ? SetupMode.tuning
+        : widget.initialMode;
+    
+    // Default to Octave 4 if not in visuals/visibility mode
+    _selectedOctave = (_mode == SetupMode.visuals || _mode == SetupMode.visibility) ? null : 4;
+
+    _colors = Map.from(widget.scheme.colors);
+    _octaveOverrides = Map.from(widget.scheme.octaveOverrides);
+    _hiddenKeys = Set.from(widget.scheme.hiddenKeys);
     _keyboardOverrides = Map.from(widget.scheme.keyboardOverrides);
     _noteSounds = Map.from(widget.scheme.noteSounds);
     _tuningOverrides = Map.from(widget.scheme.tuningOverrides);
+    _name = widget.scheme.name;
+    _icon = widget.scheme.icon;
+    _emoji = widget.scheme.emoji;
   }
 
   @override
@@ -61,16 +83,58 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
 
   void _save() {
     final provider = context.read<InstrumentProvider>();
-    switch (_mode) {
-      case SetupMode.keyboard:
-        provider.updateKeyboardOverrides(widget.scheme.id, _keyboardOverrides);
-        break;
-      case SetupMode.sounds:
-        provider.updateNoteSounds(widget.scheme.id, _noteSounds);
-        break;
-      case SetupMode.tuning:
-        provider.updateTuningOverrides(widget.scheme.id, _tuningOverrides);
-        break;
+    final updated = widget.scheme.withIconOnly(
+      icon: _icon,
+      emoji: _emoji,
+    ).copyWith(
+      name: _name,
+      colors: _colors,
+      octaveOverrides: _octaveOverrides,
+      hiddenKeys: _hiddenKeys,
+      keyboardOverrides: _keyboardOverrides,
+      noteSounds: _noteSounds,
+      tuningOverrides: _tuningOverrides,
+    );
+
+    if (widget.scheme.isBuiltIn) {
+      switch (_mode) {
+        case SetupMode.keyboard:
+          provider.updateKeyboardOverrides(widget.scheme.id, _keyboardOverrides);
+          break;
+        case SetupMode.sounds:
+          provider.updateNoteSounds(widget.scheme.id, _noteSounds);
+          break;
+        case SetupMode.tuning:
+          provider.updateTuningOverrides(widget.scheme.id, _tuningOverrides);
+          break;
+        case SetupMode.visuals:
+        case SetupMode.visibility:
+          break;
+      }
+    } else {
+      provider.updateCustom(updated);
+    }
+  }
+
+  Future<void> _editInfo() async {
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => NameIconEmojiDialog(
+        initialName: _name,
+        initialIcon: _icon,
+        initialEmoji: _emoji,
+      ),
+    );
+    if (result != null) {
+      final name = result['name'] ?? '';
+      final icon = result['icon'] ?? '';
+      final emoji = result['emoji'] ?? '';
+      setState(() {
+        _name = name.trim();
+        _icon = icon.isNotEmpty ? icon.trim() : null;
+        _emoji = emoji.isNotEmpty ? emoji.trim() : null;
+      });
+      _save();
     }
   }
 
@@ -80,12 +144,13 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
     if (_mode != SetupMode.keyboard || _pendingNote == null || event is! KeyDownEvent) return;
 
     final mapping = KeyboardUtils.getMappingName(event);
+    final noteKey = _getMappingKey(_pendingNote!);
+
     setState(() {
-      // Clear existing mapping for this key if it exists elsewhere
       _keyboardOverrides.forEach((note, m) {
-        if (m == mapping && note != _pendingNote) _keyboardOverrides[note] = '';
+        if (m == mapping && note != noteKey) _keyboardOverrides[note] = '';
       });
-      _keyboardOverrides[_pendingNote!] = mapping;
+      _keyboardOverrides[noteKey] = mapping;
       _pendingNote = null;
     });
     _save();
@@ -94,21 +159,20 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
   // ── Sound Logic ───────────────────────────────────────────────────────────
 
   Future<void> _toggleRecording(String note) async {
+    final noteKey = _getMappingKey(note);
     if (_isActionActive) {
-      // Stop recording
       final key = await _audioRecorder.stopRecording();
       setState(() {
         if (key != null && _pendingNote != null) {
-          _noteSounds[_pendingNote!] = key;
+          _noteSounds[noteKey] = key;
         }
         _isActionActive = false;
         _pendingNote = null;
       });
       _save();
     } else {
-      // Start recording
       try {
-        await _audioRecorder.startRecording(widget.scheme.id, note);
+        await _audioRecorder.startRecording(widget.scheme.id, noteKey);
         setState(() {
           _pendingNote = note;
           _isActionActive = true;
@@ -116,10 +180,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to start recording: $e'),
-              duration: const Duration(seconds: 2),
-            ),
+            SnackBar(content: Text('Failed to start recording: $e')),
           );
         }
       }
@@ -155,53 +216,52 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
 
   void _confirmTuning() {
     if (_pendingNote != null && _liveDetection != null) {
+      final noteKey = _getMappingKey(_pendingNote!);
       setState(() {
-        _tuningOverrides[_pendingNote!] = _liveDetection!;
+        _tuningOverrides[noteKey] = _liveDetection!;
       });
       _save();
-      _toggleTuning(_pendingNote!); // Stop listening
+      _toggleTuning(_pendingNote!);
     }
+  }
+
+  // ── Visuals Logic ─────────────────────────────────────────────────────────
+
+  Future<void> _pickColor(String note, Color currentColor) async {
+    final picked = await showNoteColorPicker(context, current: currentColor, label: note);
+    if (picked != null) {
+      setState(() {
+        if (_selectedOctave != null) {
+          _octaveOverrides['$note$_selectedOctave'] = picked;
+        } else {
+          _colors[note] = picked;
+        }
+      });
+      _save();
+    }
+  }
+
+  void _toggleVisibility(String step) {
+    setState(() {
+      if (_hiddenKeys.contains(step)) {
+        _hiddenKeys.remove(step);
+      } else {
+        _hiddenKeys.add(step);
+      }
+    });
+    _save();
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  String _getMappingKey(String step) {
+    return _selectedOctave != null ? '$step$_selectedOctave' : step;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final allPossibleNotes = <String>{};
-    for (int octave = 0; octave <= 8; octave++) {
-      for (final note in kNoteKeys) {
-        allPossibleNotes.add('$note$octave');
-      }
-    }
-
-    final enabledNotes = <String>[];
-    final hiddenNotes = <String>[];
-
-    for (final note in allPossibleNotes) {
-      final step = note.replaceAll(RegExp(r'\d'), '');
-      final octave = int.tryParse(note.replaceAll(RegExp(r'\D'), '')) ?? -1;
-
-      final isOverride = _keyboardOverrides.containsKey(note) || _noteSounds.containsKey(note) || _tuningOverrides.containsKey(note);
-      final isHidden = widget.scheme.hiddenKeys.contains(step);
-      final isInStandardRange = octave >= 3 && octave <= 6;
-
-      if (!isHidden && isInStandardRange) {
-        enabledNotes.add(note);
-      } else if (isHidden || isOverride) {
-        hiddenNotes.add(note);
-      }
-    }
-
-    int midiSort(String a, String b) => MusicConstants.noteNameToMidi(a).compareTo(MusicConstants.noteNameToMidi(b));
-    enabledNotes.sort(midiSort);
-    hiddenNotes.sort(midiSort);
-
-    final displayNotes = [
-      ...enabledNotes,
-      if (hiddenNotes.isNotEmpty) '---DIVIDER---',
-      ...hiddenNotes,
-    ];
-
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
@@ -210,26 +270,72 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${widget.scheme.name} Setup'),
+          title: InkWell(
+            onTap: widget.scheme.isBuiltIn ? null : _editInfo,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InstrumentIcon(scheme: widget.scheme.copyWith(name: _name, icon: _icon, emoji: _emoji), size: 24),
+                const SizedBox(width: 12),
+                Flexible(child: Text(_name, overflow: TextOverflow.ellipsis)),
+                if (!widget.scheme.isBuiltIn) const Padding(padding: EdgeInsets.only(left: 8), child: Icon(Icons.edit, size: 14, color: Colors.grey)),
+              ],
+            ),
+          ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(50),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SegmentedButton<SetupMode>(
-                segments: const [
-                  ButtonSegment(value: SetupMode.tuning, icon: Icon(Icons.tune), label: Text('Tuning')),
-                  ButtonSegment(value: SetupMode.keyboard, icon: Icon(Icons.keyboard), label: Text('Keys')),
-                  ButtonSegment(value: SetupMode.sounds, icon: Icon(Icons.mic), label: Text('Sounds')),
-                ],
-                selected: {_mode},
-                onSelectionChanged: (val) {
-                  if (_isActionActive) return;
-                  setState(() {
-                    _mode = val.first;
-                    _pendingNote = null;
-                  });
-                },
-              ),
+            preferredSize: Size.fromHeight(_mode == SetupMode.visibility ? 50 : 100),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SegmentedButton<SetupMode>(
+                      segments: [
+                        if (!widget.scheme.isBuiltIn) const ButtonSegment(value: SetupMode.visuals, icon: Icon(Icons.color_lens), label: Text('Colors')),
+                        const ButtonSegment(value: SetupMode.visibility, icon: Icon(Icons.visibility_off), label: Text('Hidden')),
+                        const ButtonSegment(value: SetupMode.tuning, icon: Icon(Icons.tune), label: Text('Tuning')),
+                        const ButtonSegment(value: SetupMode.keyboard, icon: Icon(Icons.keyboard), label: Text('Keys')),
+                        const ButtonSegment(value: SetupMode.sounds, icon: Icon(Icons.mic), label: Text('Sounds')),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (val) {
+                        if (_isActionActive) return;
+                        setState(() {
+                          _mode = val.first;
+                          _pendingNote = null;
+                          if (_mode == SetupMode.visibility) {
+                            _selectedOctave = null;
+                          } else if (_selectedOctave == null && _mode != SetupMode.visuals) {
+                            _selectedOctave = 4;
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                if (_mode != SetupMode.visibility)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SegmentedButton<int?>(
+                      segments: const [
+                        ButtonSegment(value: null, label: Text('Default')),
+                        ButtonSegment(value: 3, label: Text('3')),
+                        ButtonSegment(value: 4, label: Text('4')),
+                        ButtonSegment(value: 5, label: Text('5')),
+                        ButtonSegment(value: 6, label: Text('6')),
+                      ],
+                      selected: {_selectedOctave},
+                      onSelectionChanged: (val) {
+                        if (_isActionActive) return;
+                        setState(() {
+                          _selectedOctave = val.first;
+                          _pendingNote = null;
+                        });
+                      },
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -239,61 +345,54 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
             const Divider(height: 1),
             Expanded(
               child: ListView.builder(
-                itemCount: displayNotes.length,
+                itemCount: kNoteKeys.length,
                 itemBuilder: (context, index) {
-                  final note = displayNotes[index];
-
-                  if (note == '---DIVIDER---') {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Divider(thickness: 2, height: 32),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(
-                            'HIDDEN KEYS',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade600,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }
+                  final step = kNoteKeys[index];
+                  final noteKey = _getMappingKey(step);
+                  
+                  final currentColor = _octaveOverrides[noteKey] ?? _colors[step] ?? widget.scheme.colorForNote(step, 0, octave: _selectedOctave, context: context);
+                  final isHidden = _hiddenKeys.contains(step);
 
                   return _NoteConfigTile(
-                    note: note,
+                    note: noteKey,
                     mode: _mode,
                     scheme: widget.scheme,
-                    keyboardMapping: _keyboardOverrides[note],
-                    soundPath: _noteSounds[note],
-                    tunedTo: _tuningOverrides[note],
-                    isPending: _pendingNote == note,
-                    isActionActive: _isActionActive && _pendingNote == note,
-                    liveDetection: _pendingNote == note ? _liveDetection : null,
+                    color: currentColor,
+                    isHidden: isHidden,
+                    keyboardMapping: _keyboardOverrides[noteKey],
+                    soundPath: _noteSounds[noteKey],
+                    tunedTo: _tuningOverrides[noteKey],
+                    isPending: _pendingNote == step,
+                    isActionActive: _isActionActive && _pendingNote == step,
+                    liveDetection: _pendingNote == step ? _liveDetection : null,
                     onTap: () {
                       if (_isActionActive) return;
-                      setState(() => _pendingNote = _pendingNote == note ? null : note);
+                      if (_mode == SetupMode.visuals) {
+                        _pickColor(step, currentColor);
+                      } else if (_mode == SetupMode.visibility) {
+                        _toggleVisibility(step);
+                      } else {
+                        setState(() => _pendingNote = _pendingNote == step ? null : step);
+                      }
                     },
                     onAction: () {
-                      if (_mode == SetupMode.sounds) _toggleRecording(note);
-                      if (_mode == SetupMode.tuning) _toggleTuning(note);
+                      if (_mode == SetupMode.sounds) _toggleRecording(step);
+                      if (_mode == SetupMode.tuning) _toggleTuning(step);
                     },
+                    onToggleVisibility: () => _toggleVisibility(step),
                     onConfirmTuning: _confirmTuning,
                     onPlay: () {
-                      final midi = MusicConstants.noteNameToMidi(note);
+                      final midi = MusicConstants.noteNameToMidi(_selectedOctave != null ? noteKey : '${step}4');
                       if (midi >= 0) {
-                        _tonePlayer.playNote(MusicConstants.midiToFrequency(midi), samplePath: widget.scheme.getSamplePath(note));
+                        _tonePlayer.playNote(MusicConstants.midiToFrequency(midi), samplePath: widget.scheme.getSamplePath(noteKey));
                       }
                     },
                     onClear: () {
                       setState(() {
-                        if (_mode == SetupMode.keyboard) _keyboardOverrides.remove(note);
-                        if (_mode == SetupMode.sounds) _noteSounds.remove(note);
-                        if (_mode == SetupMode.tuning) _tuningOverrides.remove(note);
+                        if (_mode == SetupMode.keyboard) _keyboardOverrides.remove(noteKey);
+                        if (_mode == SetupMode.sounds) _noteSounds.remove(noteKey);
+                        if (_mode == SetupMode.tuning) _tuningOverrides.remove(noteKey);
+                        if (_mode == SetupMode.visuals && _selectedOctave != null) _octaveOverrides.remove(noteKey);
                       });
                       _save();
                     },
@@ -309,15 +408,22 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> with Sing
 
   Widget _buildInstructions() {
     String text = '';
+    final octaveLabel = _selectedOctave != null ? 'Octave $_selectedOctave' : 'Default settings';
     switch (_mode) {
+      case SetupMode.visuals:
+        text = 'Editing Colors for $octaveLabel.';
+        break;
+      case SetupMode.visibility:
+        text = 'Hide notes that your instrument cannot play.';
+        break;
       case SetupMode.keyboard:
-        text = _pendingNote == null ? 'Tap a note to map it to a keyboard key.' : 'Press a key for $_pendingNote...';
+        text = _pendingNote == null ? 'Tap a note to map it for $octaveLabel.' : 'Press a key for $_pendingNote...';
         break;
       case SetupMode.sounds:
-        text = 'Record custom sounds for each note.';
+        text = 'Record custom sounds for $octaveLabel.';
         break;
       case SetupMode.tuning:
-        text = 'Tell the app what note your instrument actually plays.';
+        text = 'Set tuning overrides for $octaveLabel.';
         break;
     }
     return Padding(
@@ -331,6 +437,8 @@ class _NoteConfigTile extends StatelessWidget {
   final String note;
   final SetupMode mode;
   final InstrumentProfile scheme;
+  final Color color;
+  final bool isHidden;
   final String? keyboardMapping;
   final String? soundPath;
   final String? tunedTo;
@@ -339,6 +447,7 @@ class _NoteConfigTile extends StatelessWidget {
   final String? liveDetection;
   final VoidCallback onTap;
   final VoidCallback onAction;
+  final VoidCallback? onToggleVisibility;
   final VoidCallback onConfirmTuning;
   final VoidCallback onPlay;
   final VoidCallback onClear;
@@ -347,6 +456,8 @@ class _NoteConfigTile extends StatelessWidget {
     required this.note,
     required this.mode,
     required this.scheme,
+    required this.color,
+    required this.isHidden,
     this.keyboardMapping,
     this.soundPath,
     this.tunedTo,
@@ -355,6 +466,7 @@ class _NoteConfigTile extends StatelessWidget {
     this.liveDetection,
     required this.onTap,
     required this.onAction,
+    this.onToggleVisibility,
     required this.onConfirmTuning,
     required this.onPlay,
     required this.onClear,
@@ -362,27 +474,23 @@ class _NoteConfigTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final step = note.replaceAll(RegExp(r'\d'), '');
-    final isHidden = scheme.hiddenKeys.contains(step);
-    final color = scheme.colorForNote(step, 0, octave: int.tryParse(note.replaceAll(RegExp(r'\D'), '')), context: context);
     final textColor = color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
-
     String subtitle = '';
     Widget? trailing;
 
-    if (mode == SetupMode.keyboard) {
+    if (mode == SetupMode.visuals) {
+      subtitle = '#${colorToHex(color)}';
+    } else if (mode == SetupMode.visibility) {
+      subtitle = isHidden ? 'Hidden' : 'Visible';
+      trailing = Switch(value: !isHidden, onChanged: (_) => onToggleVisibility?.call());
+    } else if (mode == SetupMode.keyboard) {
       if (isPending) {
         subtitle = 'WAITING FOR KEY...';
       } else if (keyboardMapping?.isNotEmpty == true) {
         subtitle = KeyboardUtils.formatForDisplay(keyboardMapping!);
       } else {
-        // Check for default from Standard profile
         final defaultMapping = scheme.effectiveKeyboardOverrides[note];
-        if (defaultMapping != null && defaultMapping.isNotEmpty) {
-          subtitle = 'Default: ${KeyboardUtils.formatForDisplay(defaultMapping)}';
-        } else {
-          subtitle = 'Not mapped';
-        }
+        subtitle = (defaultMapping?.isNotEmpty == true) ? 'Default: ${KeyboardUtils.formatForDisplay(defaultMapping!)}' : 'Not mapped';
       }
     } else if (mode == SetupMode.sounds) {
       subtitle = isActionActive ? 'RECORDING...' : (soundPath?.isNotEmpty == true ? 'Recorded' : 'Default');
@@ -394,7 +502,7 @@ class _NoteConfigTile extends StatelessWidget {
         ],
       );
     } else if (mode == SetupMode.tuning) {
-      subtitle = isActionActive ? (liveDetection ?? 'Listening...') : (tunedTo?.isNotEmpty == true ? 'Tuned to $tunedTo' : 'Standard');
+      subtitle = tunedTo?.isNotEmpty == true ? 'Tuned to $tunedTo' : 'Standard';
       trailing = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -408,7 +516,7 @@ class _NoteConfigTile extends StatelessWidget {
       opacity: isHidden ? 0.5 : 1.0,
       child: ListTile(
         selected: isPending,
-        onTap: onTap,
+        onTap: isHidden && (mode != SetupMode.visuals && mode != SetupMode.visibility) ? null : onTap,
         leading: Container(
           width: 40,
           height: 40,
@@ -417,7 +525,17 @@ class _NoteConfigTile extends StatelessWidget {
             child: Text(note, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 11)),
           ),
         ),
-        title: Text(note, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Text(note, style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (isActionActive && liveDetection != null) ...[
+               const SizedBox(width: 12),
+               const Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
+               const SizedBox(width: 8),
+               Text(liveDetection!, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+            ]
+          ],
+        ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
@@ -429,7 +547,7 @@ class _NoteConfigTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (trailing != null) trailing,
-            if ((keyboardMapping?.isNotEmpty == true || (soundPath?.isNotEmpty == true) || (tunedTo?.isNotEmpty == true)) && !isActionActive)
+            if ((keyboardMapping?.isNotEmpty == true || (soundPath?.isNotEmpty == true) || (tunedTo?.isNotEmpty == true) || (mode == SetupMode.visuals && note.contains(RegExp(r'\d')))) && !isActionActive)
               IconButton(icon: const Icon(Icons.close, size: 20), onPressed: onClear),
           ],
         ),

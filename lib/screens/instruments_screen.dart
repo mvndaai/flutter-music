@@ -6,7 +6,6 @@ import '../music_kit/models/instrument_profile.dart';
 import '../providers/instrument_provider.dart';
 import '../music_kit/utils/music_constants.dart';
 import 'instrument_setup_screen.dart';
-import 'instrument_editor_screen.dart';
 
 /// Screen for managing instrument profiles.
 class InstrumentsScreen extends StatelessWidget {
@@ -39,21 +38,13 @@ class InstrumentsScreen extends StatelessWidget {
                 isActive: provider.activeId == scheme.id,
                 onActivate: () => provider.setActive(scheme.id),
                 onClone: () => provider.cloneScheme(scheme),
-                onEdit: scheme.isBuiltIn
-                    ? null
-                    : () => _openEditor(context, scheme, provider),
+                onConfigure: () => _openSetup(context, scheme, SetupMode.visuals),
                 onDelete: scheme.isBuiltIn
                     ? null
                     : () => _confirmDelete(context, scheme, provider),
                 onShare: (scheme.isBuiltIn || scheme.isImported)
                     ? null
                     : () => _shareScheme(context, scheme),
-                onConfigureKeyboard: () =>
-                    _openSetup(context, scheme, SetupMode.keyboard),
-                onConfigureSounds: () =>
-                    _openSetup(context, scheme, SetupMode.sounds),
-                onConfigureTuning: () =>
-                    _openSetup(context, scheme, SetupMode.tuning),
               );
             },
           );
@@ -115,21 +106,8 @@ class InstrumentsScreen extends StatelessWidget {
       emoji: emoji.isNotEmpty ? emoji.trim() : null,
     );
     if (context.mounted) {
-      await _openEditor(context, scheme, provider);
+      await _openSetup(context, scheme, SetupMode.visuals);
     }
-  }
-
-  Future<void> _openEditor(
-    BuildContext context,
-    InstrumentProfile scheme,
-    InstrumentProvider provider,
-  ) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InstrumentEditorScreen(scheme: scheme),
-      ),
-    );
   }
 
   Future<void> _openSetup(
@@ -490,24 +468,18 @@ class _SchemeCard extends StatelessWidget {
   final bool isActive;
   final VoidCallback onActivate;
   final VoidCallback onClone;
-  final VoidCallback? onEdit;
+  final VoidCallback onConfigure;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
-  final VoidCallback onConfigureKeyboard;
-  final VoidCallback onConfigureSounds;
-  final VoidCallback onConfigureTuning;
 
   const _SchemeCard({
     required this.scheme,
     required this.isActive,
     required this.onActivate,
     required this.onClone,
-    this.onEdit,
+    required this.onConfigure,
     this.onDelete,
     this.onShare,
-    required this.onConfigureKeyboard,
-    required this.onConfigureSounds,
-    required this.onConfigureTuning,
   });
 
   @override
@@ -550,32 +522,14 @@ class _SchemeCard extends StatelessWidget {
               // Actions
               PopupMenuButton<String>(
                 onSelected: (v) {
-                  if (v == 'edit') onEdit?.call();
+                  if (v == 'configure') onConfigure();
                   if (v == 'clone') onClone();
                   if (v == 'delete') onDelete?.call();
                   if (v == 'share') onShare?.call();
-                  if (v == 'keyboard') onConfigureKeyboard();
-                  if (v == 'sounds') onConfigureSounds();
-                  if (v == 'tuning') onConfigureTuning();
                 },
                 itemBuilder: (_) => [
-                  if (onEdit != null)
-                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'configure', child: Text('Configure')),
                   const PopupMenuItem(value: 'clone', child: Text('Clone')),
-                  PopupMenuItem(
-                    value: 'keyboard',
-                    child: Text(scheme.isBuiltIn && scheme.id == 'builtin_black'
-                        ? 'Configure Default Keyboard'
-                        : 'Configure Keyboard'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'sounds',
-                    child: Text('Configure Note Sounds'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'tuning',
-                    child: Text('Configure Tuning'),
-                  ),
                   if (onShare != null)
                     const PopupMenuItem(
                         value: 'share', child: Text('Share (Submit to Library)')),
