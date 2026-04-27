@@ -75,6 +75,8 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
   }
 
   void _save() {
+    if (widget.scheme.isBuiltIn) return; // Prevent any modifications to built-in instruments
+    
     final provider = context.read<InstrumentProvider>();
     final updated = widget.scheme.copyWith(
       name: _name,
@@ -86,13 +88,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
       tuningOverrides: _tuningOverrides,
     );
 
-    if (widget.scheme.isBuiltIn) {
-      if (_mode == SetupMode.tuning) {
-        provider.updateTuningOverrides(widget.scheme.id, _tuningOverrides);
-      }
-    } else {
-      provider.updateCustom(updated);
-    }
+    provider.updateCustom(updated);
   }
 
   Future<void> _editInfo() async {
@@ -179,27 +175,33 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
           preferredSize: Size.fromHeight(_mode == SetupMode.visibility ? 50 : 100),
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SegmentedButton<SetupMode>(
-                  segments: [
-                    if (!widget.scheme.isBuiltIn) const ButtonSegment(value: SetupMode.visuals, icon: Icon(Icons.color_lens), label: Text('Colors')),
-                    const ButtonSegment(value: SetupMode.visibility, icon: Icon(Icons.visibility_off), label: Text('Hidden')),
-                    const ButtonSegment(value: SetupMode.tuning, icon: Icon(Icons.tune), label: Text('Tuning')),
-                  ],
-                  selected: {_mode},
-                  onSelectionChanged: (val) {
-                    if (_isActionActive) return;
-                    setState(() {
-                      _mode = val.first;
-                      _pendingNote = null;
-                      if (_mode == SetupMode.visibility) _selectedOctave = null;
-                      else if (_selectedOctave == null && _mode != SetupMode.visuals) _selectedOctave = 4;
-                    });
-                  },
+              if (widget.scheme.isBuiltIn)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('Built-in instrument settings cannot be modified.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SegmentedButton<SetupMode>(
+                    segments: const [
+                      ButtonSegment(value: SetupMode.visuals, icon: Icon(Icons.color_lens), label: Text('Colors')),
+                      ButtonSegment(value: SetupMode.visibility, icon: Icon(Icons.visibility_off), label: Text('Hidden')),
+                      ButtonSegment(value: SetupMode.tuning, icon: Icon(Icons.tune), label: Text('Tuning')),
+                    ],
+                    selected: {_mode},
+                    onSelectionChanged: (val) {
+                      if (_isActionActive) return;
+                      setState(() {
+                        _mode = val.first;
+                        _pendingNote = null;
+                        if (_mode == SetupMode.visibility) _selectedOctave = null;
+                        else if (_selectedOctave == null && _mode != SetupMode.visuals) _selectedOctave = 4;
+                      });
+                    },
+                  ),
                 ),
-              ),
-              if (_mode != SetupMode.visibility)
+              if (_mode != SetupMode.visibility && !widget.scheme.isBuiltIn)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: SegmentedButton<int?>(
@@ -225,7 +227,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(_getInstructionText(), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
+            child: Text(widget.scheme.isBuiltIn ? 'Viewing preset configuration.' : _getInstructionText(), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
           ),
           const Divider(height: 1),
           Expanded(
@@ -239,7 +241,7 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
                 final isInherited = _selectedOctave != null && !_octaveOverrides.containsKey(noteKey) && _mode != SetupMode.tuning;
 
                 return ListTile(
-                  onTap: () {
+                  onTap: widget.scheme.isBuiltIn ? null : () {
                     if (_isActionActive) return;
                     if (_mode == SetupMode.visuals) _pickColor(step, currentColor);
                     else if (_mode == SetupMode.visibility) _toggleVisibility(step);
@@ -262,15 +264,17 @@ class _InstrumentSetupScreenState extends State<InstrumentSetupScreen> {
                     ],
                   ),
                   subtitle: Text(_getSubtitleText(step, noteKey, currentColor, isHidden, isInherited)),
-                  trailing: _mode == SetupMode.tuning 
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_isActionActive && _pendingNote == step && _liveDetection != null) IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: _confirmTuning),
-                          IconButton(icon: Icon(_isActionActive && _pendingNote == step ? Icons.stop : Icons.tune), color: _isActionActive && _pendingNote == step ? Colors.green : null, onPressed: () => _toggleTuning(step)),
-                        ],
-                      )
-                    : (_mode == SetupMode.visibility ? Switch(value: !isHidden, onChanged: (_) => _toggleVisibility(step)) : null),
+                  trailing: widget.scheme.isBuiltIn 
+                    ? (isHidden ? const Icon(Icons.visibility_off, size: 20, color: Colors.grey) : null)
+                    : (_mode == SetupMode.tuning 
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isActionActive && _pendingNote == step && _liveDetection != null) IconButton(icon: const Icon(Icons.check, color: Colors.green), onPressed: _confirmTuning),
+                              IconButton(icon: Icon(_isActionActive && _pendingNote == step ? Icons.stop : Icons.tune), color: _isActionActive && _pendingNote == step ? Colors.green : null, onPressed: () => _toggleTuning(step)),
+                            ],
+                          )
+                        : (_mode == SetupMode.visibility ? Switch(value: !isHidden, onChanged: (_) => _toggleVisibility(step)) : null)),
                 );
               },
             ),

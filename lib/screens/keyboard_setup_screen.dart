@@ -62,6 +62,8 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> {
   }
 
   void _save() {
+    if (widget.profile.isBuiltIn) return; // Prevent modifying built-in keyboards
+
     final provider = context.read<KeyboardProvider>();
     final updated = widget.profile.copyWith(
       name: _name,
@@ -153,37 +155,44 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> {
             preferredSize: const Size.fromHeight(100),
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SegmentedButton<KeyboardSetupMode>(
-                    segments: const [
-                      ButtonSegment(value: KeyboardSetupMode.keys, icon: Icon(Icons.keyboard), label: Text('Keys')),
-                      ButtonSegment(value: KeyboardSetupMode.sounds, icon: Icon(Icons.mic), label: Text('Sounds')),
-                    ],
-                    selected: {_mode},
-                    onSelectionChanged: (val) {
-                      if (_isActionActive) return;
-                      setState(() { _mode = val.first; _pendingNote = null; });
-                    },
+                if (widget.profile.isBuiltIn)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Built-in keyboard settings cannot be modified.', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SegmentedButton<KeyboardSetupMode>(
+                      segments: const [
+                        ButtonSegment(value: KeyboardSetupMode.keys, icon: Icon(Icons.keyboard), label: Text('Keys')),
+                        ButtonSegment(value: KeyboardSetupMode.sounds, icon: Icon(Icons.mic), label: Text('Sounds')),
+                      ],
+                      selected: {_mode},
+                      onSelectionChanged: (val) {
+                        if (_isActionActive) return;
+                        setState(() { _mode = val.first; _pendingNote = null; });
+                      },
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SegmentedButton<int?>(
-                    segments: const [
-                      ButtonSegment(value: null, label: Text('Default')),
-                      ButtonSegment(value: 3, label: Text('3')),
-                      ButtonSegment(value: 4, label: Text('4')),
-                      ButtonSegment(value: 5, label: Text('5')),
-                      ButtonSegment(value: 6, label: Text('6')),
-                    ],
-                    selected: {_selectedOctave},
-                    onSelectionChanged: (val) {
-                      if (_isActionActive) return;
-                      setState(() { _selectedOctave = val.first; _pendingNote = null; });
-                    },
+                if (!widget.profile.isBuiltIn)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SegmentedButton<int?>(
+                      segments: const [
+                        ButtonSegment(value: null, label: Text('Default')),
+                        ButtonSegment(value: 3, label: Text('3')),
+                        ButtonSegment(value: 4, label: Text('4')),
+                        ButtonSegment(value: 5, label: Text('5')),
+                        ButtonSegment(value: 6, label: Text('6')),
+                      ],
+                      selected: {_selectedOctave},
+                      onSelectionChanged: (val) {
+                        if (_isActionActive) return;
+                        setState(() { _selectedOctave = val.first; _pendingNote = null; });
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -192,7 +201,7 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(_getInstructionText(), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
+              child: Text(widget.profile.isBuiltIn ? 'Viewing preset configuration.' : _getInstructionText(), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
             ),
             const Divider(height: 1),
             Expanded(
@@ -204,7 +213,7 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> {
                   final isInherited = _selectedOctave != null && !_keyboardOverrides.containsKey(noteKey) && !_noteSounds.containsKey(noteKey);
                   
                   return ListTile(
-                    onTap: () {
+                    onTap: widget.profile.isBuiltIn ? null : () {
                       if (_isActionActive) return;
                       setState(() => _pendingNote = _pendingNote == step ? null : step);
                     },
@@ -212,7 +221,7 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> {
                     leading: CircleAvatar(child: Text(step)),
                     title: Text(noteKey, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(_getSubtitleText(noteKey, isInherited)),
-                    trailing: Row(
+                    trailing: widget.profile.isBuiltIn ? null : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (_mode == KeyboardSetupMode.sounds) ...[
