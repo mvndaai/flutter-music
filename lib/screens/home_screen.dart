@@ -9,6 +9,7 @@ import 'upload_screen.dart';
 import 'share_screen.dart';
 import 'instruments_screen.dart';
 import 'music_editor_screen.dart';
+import '../widgets/note_settings_sheet.dart';
 import '../music_kit/utils/music_xml_generator.dart';
 import '../platform/platform.dart';
 
@@ -61,6 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(builder: (_) => const ShareScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => NoteSettingsSheet.show(context),
           ),
           IconButton(
             icon: const Icon(Icons.bug_report_outlined),

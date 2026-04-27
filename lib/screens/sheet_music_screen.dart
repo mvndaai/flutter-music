@@ -373,10 +373,15 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
     final current = _currentNote;
     final progress = _notes.isEmpty ? 0.0 : (_activeNoteIndex / _notes.length).clamp(0.0, 1.0);
 
-    return Focus(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: (node, event) {
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true): _printSong,
+        const SingleActivator(LogicalKeyboardKey.keyP, meta: true): _printSong,
+      },
+      child: Focus(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKeyEvent: (node, event) {
         if (mode == MusicDisplayMode.view) return KeyEventResult.ignored;
         if (event is KeyRepeatEvent) return KeyEventResult.handled;
         final mapping = KeyboardUtils.getMappingName(event);
