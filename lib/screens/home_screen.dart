@@ -48,6 +48,14 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('🎵 My Songs'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Song',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const UploadScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.bug_report_outlined),
             tooltip: 'Report issue / feedback',
             onPressed: () async {
@@ -120,14 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const UploadScreen()),
-        ),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Add Song'),
       ),
     );
   }

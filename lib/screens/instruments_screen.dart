@@ -21,6 +21,11 @@ class InstrumentsScreen extends StatelessWidget {
         title: const Text('Instruments'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New Instrument',
+            onPressed: () => _createNew(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.library_music),
             tooltip: 'Search Library',
             onPressed: () => _openLibrary(context),
@@ -52,11 +57,6 @@ class InstrumentsScreen extends StatelessWidget {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _createNew(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New'),
       ),
     );
   }

@@ -16,6 +16,13 @@ class KeyboardsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Keyboards & Sounds'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New Keyboard',
+            onPressed: () => _createNew(context),
+          ),
+        ],
       ),
       body: Consumer<KeyboardProvider>(
         builder: (context, provider, _) {
@@ -37,11 +44,6 @@ class KeyboardsScreen extends StatelessWidget {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _createNew(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New Keyboard'),
       ),
     );
   }
