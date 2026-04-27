@@ -430,22 +430,39 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
           elevation: mode == MusicDisplayMode.game ? 0 : null,
           title: Text(widget.song.title),
           actions: [
-            _ModeToggleButton(mode: mode, onModeChanged: provider.setDisplayMode),
             IconButton(
-              icon: const Icon(Icons.piano_outlined),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InstrumentsScreen())),
+              icon: const Icon(Icons.chevron_left),
+              onPressed: _activeNoteIndex > 0 ? _previous : null,
+              tooltip: 'Previous Note',
             ),
-            if (mode == MusicDisplayMode.view) ...[
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: _activeNoteIndex < _notes.length - 1 ? _advance : null,
+              tooltip: 'Next Note',
+            ),
+            if (mode == MusicDisplayMode.view)
               IconButton(
                 icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
                 onPressed: _togglePlayback,
-              ),
+                tooltip: _isPlaying ? 'Pause' : 'Play',
+              )
+            else
               IconButton(
-                icon: Icon(_tonePlayer.isMetronomeRunning ? Icons.stop : Icons.av_timer),
-                onPressed: _toggleMetronome,
+                icon: Icon(_micActive ? Icons.mic : Icons.mic_off),
+                onPressed: _toggleMic,
+                color: _micActive ? Colors.green : null,
+                tooltip: _micActive ? 'Stop Mic' : 'Start Mic',
               ),
-            ],
-            IconButton(icon: const Icon(Icons.settings), onPressed: _openSettings),
+            IconButton(
+              icon: Icon(_tonePlayer.isMetronomeRunning ? Icons.stop : Icons.av_timer),
+              onPressed: _toggleMetronome,
+              tooltip: _tonePlayer.isMetronomeRunning ? 'Stop Metronome' : 'Start Metronome',
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: _openSettings,
+              tooltip: 'Settings',
+            ),
           ],
         ),
         body: Column(
@@ -478,37 +495,9 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                 measuresPerRow: provider.measuresPerRow,
               ),
             ),
-            if (mode != MusicDisplayMode.game)
-              _BottomNavBar(
-                mode: mode,
-                micActive: _micActive,
-                onMicToggle: _toggleMic,
-                onPrevious: _activeNoteIndex > 0 ? _previous : null,
-                onNext: _activeNoteIndex < _notes.length - 1 ? _advance : null,
-              ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ModeToggleButton extends StatelessWidget {
-  final MusicDisplayMode mode;
-  final ValueChanged<MusicDisplayMode> onModeChanged;
-
-  const _ModeToggleButton({required this.mode, required this.onModeChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<MusicDisplayMode>(
-      icon: Icon(mode == MusicDisplayMode.view ? Icons.visibility : mode == MusicDisplayMode.practice ? Icons.mic : Icons.sports_esports),
-      onSelected: onModeChanged,
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: MusicDisplayMode.view, child: ListTile(leading: Icon(Icons.visibility), title: Text('View Mode'))),
-        const PopupMenuItem(value: MusicDisplayMode.practice, child: ListTile(leading: Icon(Icons.mic), title: Text('Practice Mode'))),
-        const PopupMenuItem(value: MusicDisplayMode.game, child: ListTile(leading: Icon(Icons.sports_esports), title: Text('Game Mode'))),
-      ],
     );
   }
 }
@@ -643,35 +632,6 @@ class _GameView extends StatelessWidget {
           child: IgnorePointer(child: Container(height: 2, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5))),
         ),
       ],
-    );
-  }
-}
-
-class _BottomNavBar extends StatelessWidget {
-  final MusicDisplayMode mode;
-  final bool micActive;
-  final VoidCallback onMicToggle;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
-
-  const _BottomNavBar({required this.mode, required this.micActive, required this.onMicToggle, this.onPrevious, this.onNext});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, -2))]),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(icon: const Icon(Icons.skip_previous), onPressed: onPrevious),
-          if (mode == MusicDisplayMode.practice)
-            FloatingActionButton(onPressed: onMicToggle, backgroundColor: micActive ? Colors.green : null, child: Icon(micActive ? Icons.mic : Icons.mic_off))
-          else
-            const SizedBox(width: 56),
-          IconButton(icon: const Icon(Icons.skip_next), onPressed: onNext),
-        ],
-      ),
     );
   }
 }

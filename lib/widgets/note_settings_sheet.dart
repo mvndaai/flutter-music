@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/instrument_provider.dart';
 import '../screens/instruments_screen.dart';
+import '../music_kit/models/music_display_mode.dart';
 
 /// A shared settings bottom sheet for music display and playback settings.
 class NoteSettingsSheet extends StatelessWidget {
@@ -83,6 +84,25 @@ class NoteSettingsSheet extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
+                  const Divider(height: 24),
+
+                  // Display Mode
+                  ListTile(
+                    title: const Text('Display Mode'),
+                    trailing: DropdownButton<MusicDisplayMode>(
+                      value: provider.displayMode,
+                      underline: const SizedBox.shrink(),
+                      items: const [
+                        DropdownMenuItem(value: MusicDisplayMode.view, child: Text('View')),
+                        DropdownMenuItem(value: MusicDisplayMode.practice, child: Text('Practice')),
+                        DropdownMenuItem(value: MusicDisplayMode.game, child: Text('Game')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) provider.setDisplayMode(v);
+                      },
+                    ),
+                  ),
+
                   const Divider(height: 24),
 
                   // Display toggles
