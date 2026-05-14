@@ -26,6 +26,7 @@ class SheetMusicWidget extends StatelessWidget {
   final ScrollController? scrollController;
   final int currentVerse;
   final bool? showLyrics;
+  final bool? showHighlight;
 
   final bool extendLines;
 
@@ -47,6 +48,7 @@ class SheetMusicWidget extends StatelessWidget {
     this.scrollController,
     this.currentVerse = 1,
     this.showLyrics,
+    this.showHighlight,
     this.extendLines = false,
   });
 
@@ -54,6 +56,7 @@ class SheetMusicWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final ip = context.watch<InstrumentProvider>();
     final effectiveShowHeader = showHeader && ip.showLegend;
+    final effectiveShowHighlight = showHighlight ?? (ip.showPlayControl || ip.showMicControl);
 
     return SheetMusicRenderer(
       song: song,
@@ -74,6 +77,7 @@ class SheetMusicWidget extends StatelessWidget {
       scrollController: scrollController,
       currentVerse: currentVerse,
       showLyrics: showLyrics ?? ip.showLyrics,
+      showHighlight: effectiveShowHighlight,
       extendLines: extendLines,
     );
   }

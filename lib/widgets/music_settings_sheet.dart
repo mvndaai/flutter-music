@@ -312,15 +312,43 @@ class _MusicSettingsSheetState extends State<MusicSettingsSheet> {
                 const Divider(height: 24),
                 const _SectionHeader(title: 'Sound'),
 
-                // 11. Metronome Sound
-                _SegmentedSetting<String>(
-                  title: 'Metronome Sound',
-                  value: provider.metronomeSound,
+                // Playback controls (Combined)
+                _SegmentedSetting<bool>(
+                  title: 'Play Button',
+                  value: provider.showPlayControl,
                   options: const [
-                    (value: 'tick', label: 'Tick', icon: null),
-                    (value: 'beep', label: 'Beep', icon: null),
+                    (value: true, label: 'Show', icon: Icons.play_arrow),
+                    (value: false, label: 'Hide', icon: Icons.visibility_off),
                   ],
-                  onChanged: (v) => provider.setMetronomeSound(v),
+                  onChanged: (v) => provider.setShowPlayControl(v),
+                ),
+                _SegmentedSetting<bool>(
+                  title: 'Microphone Button',
+                  value: provider.showMicControl,
+                  options: const [
+                    (value: true, label: 'Show', icon: Icons.mic),
+                    (value: false, label: 'Hide', icon: Icons.visibility_off),
+                  ],
+                  onChanged: (v) => provider.setShowMicControl(v),
+                ),
+
+                // 11. Metronome (Combined)
+                _SegmentedSetting<String>(
+                  title: 'Metronome',
+                  value: provider.showMetronomeControl ? provider.metronomeSound : 'hidden',
+                  options: const [
+                    (value: 'tick', label: 'Tick', icon: Icons.av_timer),
+                    (value: 'beep', label: 'Beep', icon: Icons.audiotrack),
+                    (value: 'hidden', label: 'Hide', icon: Icons.visibility_off),
+                  ],
+                  onChanged: (v) {
+                    if (v == 'hidden') {
+                      provider.setShowMetronomeControl(false);
+                    } else {
+                      provider.setShowMetronomeControl(true);
+                      provider.setMetronomeSound(v);
+                    }
+                  },
                 ),
 
                 // 12. Tempo

@@ -25,6 +25,9 @@ class InstrumentProvider extends ChangeNotifier {
   static const String _isAdFreeKey = 'settings_is_ad_free';
   static const String _tempoKey = 'settings_tempo';
   static const String _showLyricsKey = 'settings_show_lyrics';
+  static const String _showPlayControlKey = 'settings_show_play_control';
+  static const String _showMicControlKey = 'settings_show_mic_control';
+  static const String _showMetronomeControlKey = 'settings_show_metronome_control';
   static const String _builtInTuningOverridesKey = 'color_scheme_builtin_tuning';
 
   final Uuid _uuid = const Uuid();
@@ -51,6 +54,9 @@ class InstrumentProvider extends ChangeNotifier {
   bool _isAdFree = false;
   double _tempo = 120.0;
   bool _showLyrics = true;
+  bool _showPlayControl = true;
+  bool _showMicControl = true;
+  bool _showMetronomeControl = true;
 
   bool get isTestingEnabled {
     final uri = Uri.base;
@@ -74,6 +80,9 @@ class InstrumentProvider extends ChangeNotifier {
   bool get isAdFree => _isAdFree;
   double get tempo => _tempo;
   bool get showLyrics => _showLyrics;
+  bool get showPlayControl => _showPlayControl;
+  bool get showMicControl => _showMicControl;
+  bool get showMetronomeControl => _showMetronomeControl;
 
   List<InstrumentProfile> get allSchemes => [
         ..._builtInSchemes,
@@ -127,6 +136,9 @@ class InstrumentProvider extends ChangeNotifier {
     _isAdFree = prefs.getBool(_isAdFreeKey) ?? false;
     _tempo = prefs.getDouble(_tempoKey) ?? 120.0;
     _showLyrics = prefs.getBool(_showLyricsKey) ?? true;
+    _showPlayControl = prefs.getBool(_showPlayControlKey) ?? true;
+    _showMicControl = prefs.getBool(_showMicControlKey) ?? true;
+    _showMetronomeControl = prefs.getBool(_showMetronomeControlKey) ?? true;
 
     final modeIndex = prefs.getInt(_displayModeKey) ?? 0;
     _displayMode = MusicDisplayMode.values[modeIndex.clamp(0, MusicDisplayMode.values.length - 1)];
@@ -267,6 +279,27 @@ class InstrumentProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await _preferences;
     await prefs.setBool(_showLyricsKey, value);
+  }
+
+  Future<void> setShowPlayControl(bool value) async {
+    _showPlayControl = value;
+    notifyListeners();
+    final prefs = await _preferences;
+    await prefs.setBool(_showPlayControlKey, value);
+  }
+
+  Future<void> setShowMicControl(bool value) async {
+    _showMicControl = value;
+    notifyListeners();
+    final prefs = await _preferences;
+    await prefs.setBool(_showMicControlKey, value);
+  }
+
+  Future<void> setShowMetronomeControl(bool value) async {
+    _showMetronomeControl = value;
+    notifyListeners();
+    final prefs = await _preferences;
+    await prefs.setBool(_showMetronomeControlKey, value);
   }
 
   Future<InstrumentProfile> createCustom({String? name, String? icon, String? emoji}) async {

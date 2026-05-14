@@ -26,11 +26,11 @@ class SheetMusicRenderer extends StatefulWidget {
   final ScrollController? scrollController;
   final int currentVerse;
   final bool showLyrics;
+  final bool showHighlight;
 
   final bool extendLines;
 
   const SheetMusicRenderer({
-    super.key,
     required this.instrument,
     required this.song,
     this.activeNoteIndex = -1,
@@ -49,6 +49,7 @@ class SheetMusicRenderer extends StatefulWidget {
     this.scrollController,
     this.currentVerse = 1,
     this.showLyrics = true,
+    this.showHighlight = true,
     this.extendLines = false,
   });
 
@@ -177,6 +178,7 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
                 labelRotation: widget.labelRotation,
                 currentVerse: widget.currentVerse,
                 showLyrics: widget.showLyrics,
+                showHighlight: widget.showHighlight,
                 extendLines: widget.extendLines,
               );
             }),
@@ -210,6 +212,7 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
                 showNoteLabels: widget.showNoteLabels,
                 currentVerse: widget.currentVerse,
                 showLyrics: widget.showLyrics,
+                showHighlight: widget.showHighlight,
                 extendLines: widget.extendLines,
               );
             }),
@@ -269,6 +272,7 @@ class _StaffRow extends StatelessWidget {
   final double labelRotation;
   final int currentVerse;
   final bool showLyrics;
+  final bool showHighlight;
 
   final bool extendLines;
 
@@ -287,6 +291,7 @@ class _StaffRow extends StatelessWidget {
     this.labelRotation = 0,
     this.currentVerse = 1,
     this.showLyrics = true,
+    this.showHighlight = true,
     this.extendLines = false,
   });
 
@@ -323,6 +328,7 @@ class _StaffRow extends StatelessWidget {
               labelRotation: labelRotation,
               currentVerse: currentVerse,
               showLyrics: effectiveShowLyrics,
+              showHighlight: showHighlight,
               extendLines: extendLines,
             ),
           ),

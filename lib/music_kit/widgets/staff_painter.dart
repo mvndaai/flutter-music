@@ -50,6 +50,7 @@ class StaffPainter extends CustomPainter {
   final bool showStaffLines;
   final int currentVerse;
   final bool showLyrics;
+  final bool showHighlight;
 
   final bool extendLines;
 
@@ -69,6 +70,7 @@ class StaffPainter extends CustomPainter {
     this.showStaffLines = true,
     this.currentVerse = 1,
     this.showLyrics = true,
+    this.showHighlight = true,
     this.extendLines = false,
   });
 
@@ -88,6 +90,7 @@ class StaffPainter extends CustomPainter {
       old.showStaffLines != showStaffLines ||
       old.currentVerse != currentVerse ||
       old.showLyrics != showLyrics ||
+      old.showHighlight != showHighlight ||
       old.extendLines != extendLines;
 
   @override
@@ -303,8 +306,8 @@ class StaffPainter extends CustomPainter {
     for (int ni = 0; ni < displayNotes.length; ni++) {
       final note = displayNotes[ni];
       final globalIdx = noteOffset + ni;
-      final isActive = globalIdx == activeNoteIndex;
-      final isPast = activeNoteIndex >= 0 && globalIdx < activeNoteIndex;
+      final isActive = showHighlight && globalIdx == activeNoteIndex;
+      final isPast = showHighlight && activeNoteIndex >= 0 && globalIdx < activeNoteIndex;
       
       final noteX = StaffLayoutHelper.getNoteX(
         measure: m,

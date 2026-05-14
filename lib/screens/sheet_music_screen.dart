@@ -496,32 +496,37 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
             ),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: _activeNoteIndex > 0 ? _previous : null,
-              tooltip: 'Previous Note',
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: _activeNoteIndex < _notes.length - 1 ? _advance : null,
-              tooltip: 'Next Note',
-            ),
-            IconButton(
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              onPressed: _togglePlayback,
-              tooltip: _isPlaying ? 'Pause' : 'Play',
-            ),
-            IconButton(
-              icon: Icon(_micActive ? Icons.mic : Icons.mic_off),
-              onPressed: _toggleMic,
-              color: _micActive ? Colors.green : null,
-              tooltip: _micActive ? 'Stop Mic' : 'Start Mic',
-            ),
-            IconButton(
-              icon: Icon(_tonePlayer.isMetronomeRunning ? Icons.stop : Icons.av_timer),
-              onPressed: _toggleMetronome,
-              tooltip: _tonePlayer.isMetronomeRunning ? 'Stop Metronome' : 'Start Metronome',
-            ),
+            if (provider.showPlayControl || provider.showMicControl) ...[
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _activeNoteIndex > 0 ? _previous : null,
+                tooltip: 'Previous Note',
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _activeNoteIndex < _notes.length - 1 ? _advance : null,
+                tooltip: 'Next Note',
+              ),
+            ],
+            if (provider.showPlayControl)
+              IconButton(
+                icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+                onPressed: _togglePlayback,
+                tooltip: _isPlaying ? 'Pause' : 'Play',
+              ),
+            if (provider.showMicControl)
+              IconButton(
+                icon: Icon(_micActive ? Icons.mic : Icons.mic_off),
+                onPressed: _toggleMic,
+                color: _micActive ? Colors.green : null,
+                tooltip: _micActive ? 'Stop Mic' : 'Start Mic',
+              ),
+            if (provider.showMetronomeControl)
+              IconButton(
+                icon: Icon(_tonePlayer.isMetronomeRunning ? Icons.stop : Icons.av_timer),
+                onPressed: _toggleMetronome,
+                tooltip: _tonePlayer.isMetronomeRunning ? 'Stop Metronome' : 'Start Metronome',
+              ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: _openSettings,
