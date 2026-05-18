@@ -31,6 +31,7 @@ class SheetMusicRenderer extends StatefulWidget {
   final bool extendLines;
 
   const SheetMusicRenderer({
+    super.key,
     required this.instrument,
     required this.song,
     this.activeNoteIndex = -1,

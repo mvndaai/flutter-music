@@ -48,7 +48,7 @@ void main() async {
   }
 
   final manifestFile = File('community_library/songs_manifest.json');
-  final encoder = JsonEncoder.withIndent('  ');
+  const encoder = JsonEncoder.withIndent('  ');
   manifestFile.writeAsStringSync(encoder.convert(songs));
 
   print('Manifest generated at ${manifestFile.path}');

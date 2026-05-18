@@ -29,6 +29,7 @@ dart run tool/dev_setup.dart
 ```
 
 This will:
+
 - Configure Git merge strategy for auto-generated files
 - Install Flutter dependencies
 - Verify your Flutter environment
@@ -54,14 +55,16 @@ To update the app icons and favicon from a single source image:
 
 1. Save your source image (square preferred) to `assets/images/icon_source.png`.
 2. Run the icon generation script:
+
    ```bash
    dart run tool/generate_icons.dart
    ```
+
    This will automatically crop, resize, and update icons for Android and Web.
 
 ## Architecture
 
-```
+```text
 lib/
 ├── main.dart                  # App entry point
 ├── config/                    # App configuration and deep links
@@ -92,6 +95,7 @@ lib/
 ## Sample Songs
 
 Several sample MusicXML files are included in `assets/sample_songs/`, including:
+
 - Twinkle Twinkle Little Star
 - Old MacDonald Had a Farm
 - Mary Had a Little Lamb
@@ -107,8 +111,8 @@ Several sample MusicXML files are included in `assets/sample_songs/`, including:
 
 ## Permissions
 
-| Platform | Permission       | Purpose                     |
-|----------|------------------|-----------------------------|
-| Android  | `RECORD_AUDIO`   | Microphone for sheet music mode|
+| Platform | Permission                     | Purpose                         |
+|----------|--------------------------------|---------------------------------|
+| Android  | `RECORD_AUDIO`                 | Microphone for sheet music mode |
 | iOS      | `NSMicrophoneUsageDescription` | Microphone for sheet music mode |
-| Web      | Browser mic prompt | Microphone for sheet music mode |
+| Web      | Browser mic prompt             | Microphone for sheet music mode |

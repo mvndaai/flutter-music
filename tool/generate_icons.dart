@@ -4,7 +4,7 @@ import 'package:image/image.dart' as img;
 /// A script to generate app icons and favicons from a single source image.
 /// Place your source image at assets/images/icon_source.png before running.
 void main() async {
-  final sourcePath = 'assets/dev_images/icon_source.png';
+  const sourcePath = 'assets/dev_images/icon_source.png';
   final sourceFile = File(sourcePath);
 
   if (!sourceFile.existsSync()) {

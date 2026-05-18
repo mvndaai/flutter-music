@@ -31,7 +31,7 @@ class SongProvider extends ChangeNotifier {
         _cloud = cloud ?? CloudService();
 
   List<Song> _songs = [];
-  Map<String, List<Song>> _bundledSongsMetadata = {};
+  final Map<String, List<Song>> _bundledSongsMetadata = {};
   bool _loading = false;
   String? _error;
   String _searchQuery = '';
