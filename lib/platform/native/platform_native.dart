@@ -169,7 +169,7 @@ PlatformTonePlayer createPlatformPlayer() => MobileTonePlayer();
 /// Native implementation for saving a file.
 Future<void> saveFile({required String title, required String content}) async {
   final bytes = utf8.encode(content);
-  final fileName = '${title.replaceAll(' ', '_')}.xml';
+  final fileName = '${title.toLowerCase().replaceAll(' ', '_')}.xml';
 
   await FilePicker.saveFile(
     fileName: fileName,
