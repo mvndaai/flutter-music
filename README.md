@@ -20,10 +20,22 @@ An app for displaying colored sheet music.
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) ≥ 3.6.0
 
+### Developer Setup
+
+First-time setup after cloning the repository:
+
+```bash
+dart run tool/dev_setup.dart
+```
+
+This will:
+- Configure Git merge strategy for auto-generated files
+- Install Flutter dependencies
+- Verify your Flutter environment
+
 ### Run
 
 ```bash
-flutter pub get
 flutter run            # default device
 flutter run -d chrome  # web
 ```
