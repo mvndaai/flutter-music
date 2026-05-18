@@ -1,15 +1,23 @@
 [
   {
-    "id": "community_concerning_hobbits",
-    "title": "Concerning Hobbits (LOTR)",
+    "id": "community_icky_sticky_bubble_gum",
+    "title": "Icky Sticky Bubble Gum",
     "composer": "",
-    "icon": "💍",
-    "tags": [
-      "Movie"
-    ],
+    "icon": "🩷🫧",
+    "tags": [],
     "library": "Community",
-    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/concerning_hobbits.xml",
-    "createdAt": "2026-05-13T21:32:29.786537"
+    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/icky_sticky_bubble_gum.xml",
+    "createdAt": "2026-05-18T16:09:53.609762"
+  },
+  {
+    "id": "community_bluey_theme_song",
+    "title": "Bluey Theme Song",
+    "composer": "Jonathan Bush",
+    "icon": "🔵🐕",
+    "tags": [],
+    "library": "Community",
+    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/bluey_theme_song.xml",
+    "createdAt": "2026-05-18T16:09:53.617687"
   },
   {
     "id": "community_silent_night",
@@ -21,6 +29,18 @@
     ],
     "library": "Community",
     "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/silent_night.xml",
-    "createdAt": "2026-05-13T21:32:29.795707"
+    "createdAt": "2026-05-18T16:09:53.624720"
+  },
+  {
+    "id": "community_concerning_hobbits",
+    "title": "Concerning Hobbits (LOTR)",
+    "composer": "",
+    "icon": "💍",
+    "tags": [
+      "Movie"
+    ],
+    "library": "Community",
+    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/concerning_hobbits.xml",
+    "createdAt": "2026-05-18T16:09:53.628047"
   }
 ]
