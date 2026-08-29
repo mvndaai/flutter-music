@@ -7,17 +7,7 @@
     "tags": [],
     "library": "Community",
     "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/icky_sticky_bubble_gum.xml",
-    "createdAt": "2026-05-18T18:06:51.732577"
-  },
-  {
-    "id": "community_bluey_theme_song",
-    "title": "Bluey Theme Song",
-    "composer": "Jonathan Bush",
-    "icon": "🔵🐕",
-    "tags": [],
-    "library": "Community",
-    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/bluey_theme_song.xml",
-    "createdAt": "2026-05-18T18:06:51.740014"
+    "createdAt": "2026-08-29T21:02:15.957444"
   },
   {
     "id": "community_silent_night",
@@ -29,7 +19,17 @@
     ],
     "library": "Community",
     "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/silent_night.xml",
-    "createdAt": "2026-05-18T18:06:51.746376"
+    "createdAt": "2026-08-29T21:02:15.967400"
+  },
+  {
+    "id": "community_bluey_theme_song",
+    "title": "Bluey Theme Song",
+    "composer": "Jonathan Bush",
+    "icon": "🔵🐕",
+    "tags": [],
+    "library": "Community",
+    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/bluey_theme_song.xml",
+    "createdAt": "2026-08-29T21:02:15.973304"
   },
   {
     "id": "community_concerning_hobbits",
@@ -41,6 +41,18 @@
     ],
     "library": "Community",
     "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/concerning_hobbits.xml",
-    "createdAt": "2026-05-18T18:06:51.749269"
+    "createdAt": "2026-08-29T21:02:15.977539"
+  },
+  {
+    "id": "community_gerudo_valley",
+    "title": "Gerudo Valley (Zelda)",
+    "composer": "Koji Kondo",
+    "icon": "🏜️",
+    "tags": [
+      "Video Game"
+    ],
+    "library": "Community",
+    "localPath": "https://raw.githubusercontent.com/mvndaai/fun-sheet-music/main/community_library/songs/gerudo_valley.xml",
+    "createdAt": "2026-08-29T21:02:15.983752"
   }
 ]
