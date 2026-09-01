@@ -272,6 +272,14 @@ class _MusicSettingsSheetState extends State<MusicSettingsSheet> {
                   onChanged: (v) => provider.setNoteLabelMode(v),
                 ),
 
+                if (provider.showSolfege)
+                  _SolfegeShiftSetting(
+                    shift: provider.solfegeShift,
+                    alter: provider.solfegeTonicAlter,
+                    onShiftChanged: (v) => provider.setSolfegeShift(v),
+                    onAlterChanged: (v) => provider.setSolfegeTonicAlter(v),
+                  ),
+
                 if (provider.showNoteLabels) ...[
                   // 8. Label Position
                   _SegmentedSetting<bool>(
@@ -524,6 +532,100 @@ class _SegmentedSetting<T> extends StatelessWidget {
                 padding: EdgeInsets.zero,
               ),
             ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _SolfegeShiftSetting extends StatelessWidget {
+  final int shift;
+  final double alter;
+  final ValueChanged<int> onShiftChanged;
+  final ValueChanged<double> onAlterChanged;
+
+  const _SolfegeShiftSetting({
+    required this.shift,
+    required this.alter,
+    required this.onShiftChanged,
+    required this.onAlterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const shiftOptions = [
+      (value: 0, label: 'C'),
+      (value: 6, label: 'D'),
+      (value: 5, label: 'E'),
+      (value: 4, label: 'F'),
+      (value: 3, label: 'G'),
+      (value: 2, label: 'A'),
+      (value: 1, label: 'B'),
+    ];
+
+    const alterOptions = [
+      (value: -1.0, label: '♭'),
+      (value: 0.0, label: '♮'),
+      (value: 1.0, label: '♯'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Text(
+            'Solfège Tonic (Movable Do)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.normal,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 7,
+                child: SegmentedButton<int>(
+                  segments: shiftOptions
+                      .map((opt) => ButtonSegment<int>(
+                            value: opt.value,
+                            label: Text(opt.label),
+                          ))
+                      .toList(),
+                  selected: {shift},
+                  onSelectionChanged: (set) => onShiftChanged(set.first),
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: SegmentedButton<double>(
+                  segments: alterOptions
+                      .map((opt) => ButtonSegment<double>(
+                            value: opt.value,
+                            label: Text(opt.label),
+                          ))
+                      .toList(),
+                  selected: {alter},
+                  onSelectionChanged: (set) => onAlterChanged(set.first),
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),

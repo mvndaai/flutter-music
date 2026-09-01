@@ -104,6 +104,8 @@ class _BatchPrintDialogState extends State<BatchPrintDialog> {
         songs: fullSongs,
         colorScheme: instrumentProvider.activeScheme,
         showSolfege: instrumentProvider.showSolfege,
+        solfegeShift: instrumentProvider.solfegeShift,
+        solfegeTonicAlter: instrumentProvider.solfegeTonicAlter,
         showLetter: instrumentProvider.showLetter,
         labelsBelow: instrumentProvider.labelsBelow,
         coloredLabels: instrumentProvider.coloredLabels,

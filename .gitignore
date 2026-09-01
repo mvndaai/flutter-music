@@ -75,6 +75,7 @@ unlinked_spec.ds
 **/ios/**/.symlinks/
 **/ios/**/profile
 **/ios/**/xcuserdata
+**/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-*.png
 **/ios/.generated/
 **/ios/Flutter/.last_build_id
 **/ios/Flutter/App.framework
@@ -92,6 +93,7 @@ unlinked_spec.ds
 # macOS
 **/Flutter/ephemeral/
 **/Pods/
+**/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_*.png
 **/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Flutter/ephemeral
 **/xcuserdata/

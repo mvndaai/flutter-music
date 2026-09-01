@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../utils/music_constants.dart';
 
 enum NoteLabelMode {
   letters,
@@ -54,29 +55,20 @@ class MusicNote {
   }
 
   /// Returns the solfège name (Do, Re, Mi, ...) for the natural note step.
-  String get solfegeName {
+  String getSolfegeName({int shift = 0, double tonicAlter = 0}) {
     if (isRest) return 'Rest';
-    const solfege = {
-      'C': 'Do',
-      'D': 'Re',
-      'E': 'Mi',
-      'F': 'Fa',
-      'G': 'Sol',
-      'A': 'La',
-      'B': 'Si',
-    };
-    final base = solfege[step] ?? step;
-    if (alter == 1) return '$base#';
-    if (alter == -1) return '${base}b';
-    return base;
+    return MusicConstants.getSolfegeName(step, alter, shift: shift, tonicAlter: tonicAlter);
   }
 
+  /// Returns the solfège name (Do, Re, Mi, ...) for the natural note step using default shift.
+  String get solfegeName => getSolfegeName();
+
   /// Returns a display label for the note based on the given mode.
-  String labelFor(NoteLabelMode mode) {
+  String labelFor(NoteLabelMode mode, {int solfegeShift = 0, double solfegeTonicAlter = 0}) {
     if (isRest) return '';
     return switch (mode) {
       NoteLabelMode.letters => letterName.replaceAll(RegExp(r'\d'), ''),
-      NoteLabelMode.solfege => solfegeName,
+      NoteLabelMode.solfege => getSolfegeName(shift: solfegeShift, tonicAlter: solfegeTonicAlter),
       NoteLabelMode.none => '',
     };
   }

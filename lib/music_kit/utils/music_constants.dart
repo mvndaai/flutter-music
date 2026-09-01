@@ -38,6 +38,24 @@ class MusicConstants {
     'B': 'Si',
   };
 
+  /// Returns the solfège name for a given note step and shift.
+  static String getSolfegeName(String step, double alter, {int shift = 0, double tonicAlter = 0}) {
+    const steps = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    const syllables = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+
+    final cleanStep = step.toUpperCase().replaceAll(RegExp(r'[#b0-9]'), '');
+    final stepIdx = steps.indexOf(cleanStep);
+    if (stepIdx == -1) return step;
+
+    final syllableIdx = (stepIdx + shift) % 7;
+    final base = syllables[syllableIdx < 0 ? syllableIdx + 7 : syllableIdx];
+
+    final relativeAlter = alter - tonicAlter;
+    if (relativeAlter >= 1) return '$base#';
+    if (relativeAlter <= -1) return '${base}b';
+    return base;
+  }
+
   /// Frequency tolerance for pitch detection (in semitones).
   static const double pitchToleranceSemitones = 0.5;
 

@@ -382,6 +382,7 @@ class _ColorSwatchRow extends StatelessWidget {
       return LegendPiano(
         instrument: scheme,
         showSolfege: showSolfege,
+        solfegeShift: provider.solfegeShift,
         showLabels: showLabels,
         keyWidth: 20,
         keyHeight: 32,
@@ -409,6 +410,7 @@ class _ColorSwatchRow extends StatelessWidget {
               label: note,
               color: scheme.colors[note]!,
               showSolfege: showSolfege,
+              solfegeShift: provider.solfegeShift,
               showLabels: showLabels,
               size: 20,
             )),
@@ -416,6 +418,7 @@ class _ColorSwatchRow extends StatelessWidget {
               label: key,
               color: scheme.octaveOverrides[key]!,
               showSolfege: showSolfege,
+              solfegeShift: provider.solfegeShift,
               showLabels: showLabels,
               size: 20,
             )),
