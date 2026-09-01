@@ -22,7 +22,6 @@ class InstrumentProvider extends ChangeNotifier {
   static const String _metronomeSoundKey = 'settings_metronome_sound';
   static const String _displayModeKey = 'settings_display_mode';
   static const String _pdfLandscapeKey = 'settings_pdf_landscape';
-  static const String _isAdFreeKey = 'settings_is_ad_free';
   static const String _tempoKey = 'settings_tempo';
   static const String _showLyricsKey = 'settings_show_lyrics';
   static const String _showPlayControlKey = 'settings_show_play_control';
@@ -53,7 +52,6 @@ class InstrumentProvider extends ChangeNotifier {
   String _metronomeSound = 'tick';
   MusicDisplayMode _displayMode = MusicDisplayMode.sheetMusic;
   bool _pdfLandscape = false;
-  bool _isAdFree = false;
   double _tempo = 120.0;
   bool _showLyrics = true;
   bool _showPlayControl = true;
@@ -81,7 +79,6 @@ class InstrumentProvider extends ChangeNotifier {
   String get metronomeSound => _metronomeSound;
   MusicDisplayMode get displayMode => _displayMode;
   bool get pdfLandscape => _pdfLandscape;
-  bool get isAdFree => _isAdFree;
   double get tempo => _tempo;
   bool get showLyrics => _showLyrics;
   bool get showPlayControl => _showPlayControl;
@@ -139,7 +136,6 @@ class InstrumentProvider extends ChangeNotifier {
 
     _metronomeSound = prefs.getString(_metronomeSoundKey) ?? 'tick';
     _pdfLandscape = prefs.getBool(_pdfLandscapeKey) ?? false;
-    _isAdFree = prefs.getBool(_isAdFreeKey) ?? false;
     _tempo = prefs.getDouble(_tempoKey) ?? 120.0;
     _showLyrics = prefs.getBool(_showLyricsKey) ?? true;
     _showPlayControl = prefs.getBool(_showPlayControlKey) ?? true;
@@ -265,11 +261,6 @@ class InstrumentProvider extends ChangeNotifier {
   Future<void> setPdfLandscape(bool value) async {
     _pdfLandscape = value; notifyListeners();
     final prefs = await _preferences; await prefs.setBool(_pdfLandscapeKey, value);
-  }
-
-  Future<void> setAdFree(bool value) async {
-    _isAdFree = value; notifyListeners();
-    final prefs = await _preferences; await prefs.setBool(_isAdFreeKey, value);
   }
 
   Future<void> setTempo(double value, {bool persist = true}) async {

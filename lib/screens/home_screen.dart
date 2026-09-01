@@ -8,7 +8,6 @@ import '../providers/instrument_provider.dart';
 import '../music_kit/models/song.dart';
 import '../music_kit/models/instrument_profile.dart';
 import '../widgets/tag_chip.dart';
-import '../widgets/kid_safe_ad_banner.dart';
 import '../config/app_links.dart';
 import '../main.dart' show showToast;
 import 'sheet_music_screen.dart';
@@ -311,13 +310,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                             ),
-                ),
-                // Ad Banner
-                Consumer<InstrumentProvider>(
-                  builder: (context, instrProvider, _) {
-                    if (kIsWeb || instrProvider.isAdFree) return const SizedBox.shrink();
-                    return const KidSafeAdBanner();
-                  },
                 ),
               ],
             );
