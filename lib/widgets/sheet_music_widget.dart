@@ -15,6 +15,7 @@ class SheetMusicWidget extends StatelessWidget {
   final int? ghostNoteIndex;
   final MusicNote? ghostNote;
   final bool showSolfege;
+  final int solfegeShift;
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
@@ -37,6 +38,7 @@ class SheetMusicWidget extends StatelessWidget {
     this.ghostNoteIndex,
     this.ghostNote,
     this.showSolfege = false,
+    this.solfegeShift = 0,
     this.showLetter = true,
     this.labelsBelow = true,
     this.coloredLabels = false,
@@ -65,6 +67,8 @@ class SheetMusicWidget extends StatelessWidget {
       ghostNoteIndex: ghostNoteIndex,
       ghostNote: ghostNote,
       showSolfege: showSolfege,
+      solfegeShift: solfegeShift,
+      solfegeTonicAlter: ip.solfegeTonicAlter,
       showLetter: showLetter,
       labelsBelow: labelsBelow,
       coloredLabels: coloredLabels,
@@ -98,6 +102,8 @@ class _ColorLegend extends StatelessWidget {
       return LegendPiano(
         instrument: scheme,
         showSolfege: showSolfege,
+        solfegeShift: provider.solfegeShift,
+        solfegeTonicAlter: provider.solfegeTonicAlter,
         showLabels: showLabels,
       );
     }
@@ -115,12 +121,16 @@ class _ColorLegend extends StatelessWidget {
                 label: note,
                 color: scheme.colors[note]!,
                 showSolfege: showSolfege,
+                solfegeShift: provider.solfegeShift,
+                solfegeTonicAlter: provider.solfegeTonicAlter,
                 showLabels: showLabels,
               )),
           ...overrideKeys.map((key) => LegendCircle(
                 label: key,
                 color: scheme.octaveOverrides[key]!,
                 showSolfege: showSolfege,
+                solfegeShift: provider.solfegeShift,
+                solfegeTonicAlter: provider.solfegeTonicAlter,
                 showLabels: showLabels,
               )),
         ],

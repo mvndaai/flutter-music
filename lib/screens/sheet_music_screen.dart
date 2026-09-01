@@ -360,6 +360,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
       song: widget.song,
       colorScheme: provider.activeScheme,
       showSolfege: provider.showSolfege,
+      solfegeShift: provider.solfegeShift,
+      solfegeTonicAlter: provider.solfegeTonicAlter,
       showLetter: provider.showLetter,
       labelsBelow: provider.labelsBelow,
       coloredLabels: provider.coloredLabels,
@@ -551,6 +553,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                     child: _CurrentNoteCard(
                       note: current,
                       showSolfege: provider.showSolfege,
+                      solfegeShift: provider.solfegeShift,
+                      solfegeTonicAlter: provider.solfegeTonicAlter,
                       detectedNote: _detectedNote,
                       isKeyboardInput: _isKeyboardInput,
                       lastPhysicalKey: _lastPhysicalKey,
@@ -569,6 +573,8 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                     _CurrentNoteCard(
                       note: current,
                       showSolfege: provider.showSolfege,
+                      solfegeShift: provider.solfegeShift,
+                      solfegeTonicAlter: provider.solfegeTonicAlter,
                       detectedNote: _detectedNote,
                       isKeyboardInput: _isKeyboardInput,
                       lastPhysicalKey: _lastPhysicalKey,
@@ -584,6 +590,7 @@ class _SheetMusicScreenState extends State<SheetMusicScreen> with SingleTickerPr
                       song: widget.song,
                       activeNoteIndex: _activeNoteIndex,
                       showSolfege: provider.showSolfege,
+                      solfegeShift: provider.solfegeShift,
                       showLetter: provider.showLetter,
                       labelsBelow: provider.labelsBelow,
                       coloredLabels: provider.coloredLabels,
@@ -665,6 +672,7 @@ class _GameView extends StatelessWidget {
                                 song: displaySong,
                                 activeNoteIndex: activeNoteIndex,
                                 showSolfege: provider.showSolfege,
+                                solfegeShift: provider.solfegeShift,
                                 showLetter: provider.showLetter,
                                 labelsBelow: provider.labelsBelow,
                                 coloredLabels: provider.coloredLabels,
@@ -809,6 +817,8 @@ class _ScrollingLyrics extends StatelessWidget {
 class _CurrentNoteCard extends StatelessWidget {
   final MusicNote note;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final String detectedNote;
   final bool isKeyboardInput;
   final String lastPhysicalKey;
@@ -821,6 +831,8 @@ class _CurrentNoteCard extends StatelessWidget {
   const _CurrentNoteCard({
     required this.note,
     required this.showSolfege,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     required this.detectedNote,
     required this.isKeyboardInput,
     required this.lastPhysicalKey,
@@ -868,7 +880,7 @@ class _CurrentNoteCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(showSolfege ? note.solfegeName : note.letterName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    Text(showSolfege ? note.getSolfegeName(shift: solfegeShift, tonicAlter: solfegeTonicAlter) : note.letterName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                     const SizedBox(width: 8),
                     if (cleanHint.isNotEmpty)
                       Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(4)), child: Text(cleanHint, style: const TextStyle(fontSize: 11))),

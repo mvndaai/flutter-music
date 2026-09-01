@@ -5,6 +5,8 @@ import '../music_kit/utils/music_constants.dart';
 class LegendPiano extends StatelessWidget {
   final InstrumentProfile instrument;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final bool showLabels;
   final double keyWidth;
   final double keyHeight;
@@ -13,6 +15,8 @@ class LegendPiano extends StatelessWidget {
     super.key,
     required this.instrument,
     this.showSolfege = false,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     this.showLabels = true,
     this.keyWidth = 32,
     this.keyHeight = 48,
@@ -77,7 +81,13 @@ class LegendPiano extends StatelessWidget {
     final borderWidth = (displayColor != baseColor && !isDark) ? 0.8 : 0.5;
 
     final textColor = displayColor.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
-    final solfege = MusicConstants.stepToSolfege[note] ?? note;
+    final double alter = note.contains('#') ? 1.0 : (note.contains('b') ? -1.0 : 0.0);
+    final solfege = MusicConstants.getSolfegeName(
+      note,
+      alter,
+      shift: solfegeShift,
+      tonicAlter: solfegeTonicAlter,
+    );
     final label = showSolfege ? solfege : note;
 
     return Opacity(

@@ -5,6 +5,8 @@ class LegendCircle extends StatelessWidget {
   final String label;
   final Color color;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final bool showLabels;
   final double size;
 
@@ -13,6 +15,8 @@ class LegendCircle extends StatelessWidget {
     required this.label,
     required this.color,
     this.showSolfege = false,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     this.showLabels = true,
     this.size = 32,
   });
@@ -20,7 +24,13 @@ class LegendCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseNote = label.replaceAll(RegExp(r'[0-9]'), '');
-    final solfege = MusicConstants.stepToSolfege[baseNote] ?? baseNote;
+    final double alter = baseNote.contains('#') ? 1.0 : (baseNote.contains('b') ? -1.0 : 0.0);
+    final solfege = MusicConstants.getSolfegeName(
+      baseNote,
+      alter,
+      shift: solfegeShift,
+      tonicAlter: solfegeTonicAlter,
+    );
     final textColor = color.computeLuminance() > 0.35 ? Colors.black87 : Colors.white;
 
     String displayLabel = label;

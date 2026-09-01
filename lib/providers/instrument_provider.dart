@@ -28,6 +28,8 @@ class InstrumentProvider extends ChangeNotifier {
   static const String _showPlayControlKey = 'settings_show_play_control';
   static const String _showMicControlKey = 'settings_show_mic_control';
   static const String _showMetronomeControlKey = 'settings_show_metronome_control';
+  static const String _solfegeShiftKey = 'settings_solfege_shift';
+  static const String _solfegeTonicAlterKey = 'settings_solfege_tonic_alter';
   static const String _builtInTuningOverridesKey = 'color_scheme_builtin_tuning';
 
   final Uuid _uuid = const Uuid();
@@ -57,6 +59,8 @@ class InstrumentProvider extends ChangeNotifier {
   bool _showPlayControl = true;
   bool _showMicControl = true;
   bool _showMetronomeControl = true;
+  int _solfegeShift = 0;
+  double _solfegeTonicAlter = 0;
 
   bool get isTestingEnabled {
     final uri = Uri.base;
@@ -83,6 +87,8 @@ class InstrumentProvider extends ChangeNotifier {
   bool get showPlayControl => _showPlayControl;
   bool get showMicControl => _showMicControl;
   bool get showMetronomeControl => _showMetronomeControl;
+  int get solfegeShift => _solfegeShift;
+  double get solfegeTonicAlter => _solfegeTonicAlter;
 
   List<InstrumentProfile> get allSchemes => [
         ..._builtInSchemes,
@@ -139,6 +145,8 @@ class InstrumentProvider extends ChangeNotifier {
     _showPlayControl = prefs.getBool(_showPlayControlKey) ?? true;
     _showMicControl = prefs.getBool(_showMicControlKey) ?? true;
     _showMetronomeControl = prefs.getBool(_showMetronomeControlKey) ?? true;
+    _solfegeShift = prefs.getInt(_solfegeShiftKey) ?? 0;
+    _solfegeTonicAlter = prefs.getDouble(_solfegeTonicAlterKey) ?? 0;
 
     final modeIndex = prefs.getInt(_displayModeKey) ?? 0;
     _displayMode = MusicDisplayMode.values[modeIndex.clamp(0, MusicDisplayMode.values.length - 1)];
@@ -300,6 +308,20 @@ class InstrumentProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await _preferences;
     await prefs.setBool(_showMetronomeControlKey, value);
+  }
+
+  Future<void> setSolfegeShift(int value) async {
+    _solfegeShift = value;
+    notifyListeners();
+    final prefs = await _preferences;
+    await prefs.setInt(_solfegeShiftKey, value);
+  }
+
+  Future<void> setSolfegeTonicAlter(double value) async {
+    _solfegeTonicAlter = value;
+    notifyListeners();
+    final prefs = await _preferences;
+    await prefs.setDouble(_solfegeTonicAlterKey, value);
   }
 
   Future<InstrumentProfile> createCustom({String? name, String? icon, String? emoji}) async {

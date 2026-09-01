@@ -483,6 +483,8 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
       song: songWithRests,
       colorScheme: instrumentProvider.activeScheme,
       showSolfege: instrumentProvider.showSolfege,
+      solfegeShift: instrumentProvider.solfegeShift,
+      solfegeTonicAlter: instrumentProvider.solfegeTonicAlter,
       showLetter: instrumentProvider.showLetter,
       labelsBelow: instrumentProvider.labelsBelow,
       coloredLabels: instrumentProvider.coloredLabels,
@@ -604,6 +606,8 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<InstrumentProvider>();
+
     return PopScope(
       canPop: !_hasUnsavedChanges,
       onPopInvokedWithResult: (didPop, result) async {
@@ -741,6 +745,11 @@ class _MusicEditorScreenState extends State<MusicEditorScreen> {
                     beam: (!_nextIsRest && (_nextType == 'eighth' || _nextType == '16th')) ? _nextBeam : null,
                   ),
                   currentVerse: _currentVerse,
+                  showSolfege: provider.showSolfege,
+                  solfegeShift: provider.solfegeShift,
+                  showLetter: provider.showLetter,
+                  labelsBelow: provider.labelsBelow,
+                  coloredLabels: provider.coloredLabels,
                 ),
               ),
               _isLyricsMode ? _buildLyricsEditor() : _buildEditorControls(),

@@ -16,6 +16,8 @@ class MusicPdfService {
     required Song song,
     required InstrumentProfile colorScheme,
     required bool showSolfege,
+    required int solfegeShift,
+    required double solfegeTonicAlter,
     required bool showLetter,
     required bool labelsBelow,
     required bool coloredLabels,
@@ -26,6 +28,8 @@ class MusicPdfService {
       songs: [song],
       colorScheme: colorScheme,
       showSolfege: showSolfege,
+      solfegeShift: solfegeShift,
+      solfegeTonicAlter: solfegeTonicAlter,
       showLetter: showLetter,
       labelsBelow: labelsBelow,
       coloredLabels: coloredLabels,
@@ -38,6 +42,8 @@ class MusicPdfService {
     required List<Song> songs,
     required InstrumentProfile colorScheme,
     required bool showSolfege,
+    required int solfegeShift,
+    required double solfegeTonicAlter,
     required bool showLetter,
     required bool labelsBelow,
     required bool coloredLabels,
@@ -160,6 +166,8 @@ class MusicPdfService {
                                   musicFont: musicFont,
                                   previousMeasure: rowIndex > 0 ? rows[rowIndex - 1].last : null,
                                   showSolfege: showSolfege,
+                                  solfegeShift: solfegeShift,
+                                  solfegeTonicAlter: solfegeTonicAlter,
                                   showLetter: showLetter,
                                   labelsBelow: labelsBelow,
                                   coloredLabels: coloredLabels,
@@ -239,6 +247,8 @@ class MusicPdfService {
     required pw.Font musicFont,
     required Measure? previousMeasure,
     required bool showSolfege,
+    required int solfegeShift,
+    required double solfegeTonicAlter,
     required bool showLetter,
     required bool labelsBelow,
     required bool coloredLabels,
@@ -323,6 +333,8 @@ class MusicPdfService {
             musicFont: musicFont,
             previousMeasure: previousMeasure,
             showSolfege: showSolfege,
+            solfegeShift: solfegeShift,
+            solfegeTonicAlter: solfegeTonicAlter,
             showLetter: showLetter,
             labelsBelow: labelsBelow,
             coloredLabels: coloredLabels,
@@ -347,6 +359,8 @@ class MusicPdfService {
     required pw.Font musicFont,
     required Measure? previousMeasure,
     required bool showSolfege,
+    required int solfegeShift,
+    required double solfegeTonicAlter,
     required bool showLetter,
     required bool labelsBelow,
     required bool coloredLabels,
@@ -557,6 +571,8 @@ class MusicPdfService {
                     pdfColor: pdfColor,
                     colorLuminance: color.computeLuminance(),
                     showSolfege: showSolfege,
+                    solfegeShift: solfegeShift,
+                    solfegeTonicAlter: solfegeTonicAlter,
                     showLetter: showLetter,
                     labelsBelow: labelsBelow,
                     coloredLabels: coloredLabels,
@@ -677,6 +693,8 @@ class MusicPdfService {
                   pdfColor: pdfColor,
                   colorLuminance: color.computeLuminance(),
                   showSolfege: showSolfege,
+                  solfegeShift: solfegeShift,
+                  solfegeTonicAlter: solfegeTonicAlter,
                   showLetter: showLetter,
                   labelsBelow: labelsBelow,
                   coloredLabels: coloredLabels,
@@ -708,6 +726,8 @@ class MusicPdfService {
                 pdfColor: pdfColor,
                 colorLuminance: color.computeLuminance(),
                 showSolfege: showSolfege,
+                solfegeShift: solfegeShift,
+                solfegeTonicAlter: solfegeTonicAlter,
                 showLetter: showLetter,
                 labelsBelow: labelsBelow,
                 coloredLabels: coloredLabels,
@@ -1011,16 +1031,18 @@ class MusicPdfService {
     required bool labelsBelow,
     required bool coloredLabels,
     required double? stemTipY,
+    required int solfegeShift,
+    required double solfegeTonicAlter,
   }) {
     String label = '';
     if (showLetter && showSolfege) {
-      label = '${note.step}\n${note.solfegeName}';
+      label = '${note.step}\n${note.getSolfegeName(shift: solfegeShift, tonicAlter: solfegeTonicAlter)}';
     } else if (showLetter) {
       label = note.step;
       if (note.alter == 1) label += '#';
       if (note.alter == -1) label += 'b';
     } else if (showSolfege) {
-      label = note.solfegeName;
+      label = note.getSolfegeName(shift: solfegeShift, tonicAlter: solfegeTonicAlter);
     }
 
     if (labelsBelow) {

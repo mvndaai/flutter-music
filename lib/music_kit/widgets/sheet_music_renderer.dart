@@ -13,6 +13,8 @@ class SheetMusicRenderer extends StatefulWidget {
   final int? ghostNoteIndex;
   final MusicNote? ghostNote;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
@@ -38,6 +40,8 @@ class SheetMusicRenderer extends StatefulWidget {
     this.ghostNoteIndex,
     this.ghostNote,
     this.showSolfege = false,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     this.showLetter = true,
     this.labelsBelow = true,
     this.coloredLabels = false,
@@ -171,6 +175,8 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
                 ghostNoteIndex: widget.ghostNoteIndex,
                 ghostNote: widget.ghostNote,
                 showSolfege: widget.showSolfege,
+                solfegeShift: widget.solfegeShift,
+                solfegeTonicAlter: widget.solfegeTonicAlter,
                 showLetter: widget.showLetter,
                 labelsBelow: widget.labelsBelow,
                 coloredLabels: widget.coloredLabels,
@@ -206,6 +212,8 @@ class _SheetMusicRendererState extends State<SheetMusicRenderer> {
                 ghostNoteIndex: widget.ghostNoteIndex,
                 ghostNote: widget.ghostNote,
                 showSolfege: widget.showSolfege,
+                solfegeShift: widget.solfegeShift,
+                solfegeTonicAlter: widget.solfegeTonicAlter,
                 showLetter: widget.showLetter,
                 labelsBelow: widget.labelsBelow,
                 coloredLabels: widget.coloredLabels,
@@ -265,6 +273,8 @@ class _StaffRow extends StatelessWidget {
   final int? ghostNoteIndex;
   final MusicNote? ghostNote;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
@@ -284,6 +294,8 @@ class _StaffRow extends StatelessWidget {
     this.ghostNoteIndex,
     this.ghostNote,
     required this.showSolfege,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     required this.showLetter,
     required this.labelsBelow,
     required this.coloredLabels,
@@ -320,6 +332,8 @@ class _StaffRow extends StatelessWidget {
               ghostNoteIndex: ghostNoteIndex,
               ghostNote: ghostNote,
               showSolfege: showSolfege,
+              solfegeShift: solfegeShift,
+              solfegeTonicAlter: solfegeTonicAlter,
               showLetter: showLetter,
               labelsBelow: labelsBelow,
               coloredLabels: coloredLabels,

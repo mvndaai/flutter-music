@@ -40,6 +40,8 @@ class StaffPainter extends CustomPainter {
   final int? ghostNoteIndex;
   final MusicNote? ghostNote;
   final bool showSolfege;
+  final int solfegeShift;
+  final double solfegeTonicAlter;
   final bool showLetter;
   final bool labelsBelow;
   final bool coloredLabels;
@@ -60,6 +62,8 @@ class StaffPainter extends CustomPainter {
     this.ghostNoteIndex,
     this.ghostNote,
     required this.showSolfege,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
     required this.showLetter,
     required this.labelsBelow,
     required this.coloredLabels,
@@ -80,6 +84,8 @@ class StaffPainter extends CustomPainter {
       old.ghostNoteIndex != ghostNoteIndex ||
       old.ghostNote != ghostNote ||
       old.showSolfege != showSolfege ||
+      old.solfegeShift != solfegeShift ||
+      old.solfegeTonicAlter != solfegeTonicAlter ||
       old.showLetter != showLetter ||
       old.labelsBelow != labelsBelow ||
       old.coloredLabels != coloredLabels ||
@@ -982,7 +988,7 @@ class StaffPainter extends CustomPainter {
     if (!showNoteLabels) return;
     if (!showLetter && !showSolfege) return;
     final raw = note.letterName.replaceAll(RegExp(r'\d'), '');
-    final label = showSolfege ? note.solfegeName : raw;
+    final label = showSolfege ? note.getSolfegeName(shift: solfegeShift, tonicAlter: solfegeTonicAlter) : raw;
     final filled = note.type != 'whole' && note.type != 'half' && note.type != 'breve';
 
     if (labelsBelow) {

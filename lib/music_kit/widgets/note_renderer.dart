@@ -17,6 +17,8 @@ class NoteRenderer extends StatelessWidget {
   final double size;
   final bool showSolfege; 
   final bool showLetter; 
+  final int solfegeShift;
+  final double solfegeTonicAlter;
 
   const NoteRenderer({
     super.key,
@@ -28,6 +30,8 @@ class NoteRenderer extends StatelessWidget {
     this.size = 52,
     this.showSolfege = false,
     this.showLetter = true,
+    this.solfegeShift = 0,
+    this.solfegeTonicAlter = 0,
   });
 
   @override
@@ -44,7 +48,11 @@ class NoteRenderer extends StatelessWidget {
 
     final showLabels = showNoteLabels && (showLetter || showSolfege);
     final labelMode = showSolfege ? NoteLabelMode.solfege : NoteLabelMode.letters;
-    final displayName = note.labelFor(labelMode);
+    final displayName = note.labelFor(
+      labelMode,
+      solfegeShift: solfegeShift,
+      solfegeTonicAlter: solfegeTonicAlter,
+    );
 
     final double scale = isActive ? 1.35 : 1.0;
     final opacity = isPast ? 0.4 : 1.0;

@@ -36,6 +36,8 @@ class NoteWidget extends StatelessWidget {
       size: size,
       showSolfege: showSolfege,
       showLetter: showLetter,
+      solfegeShift: instrumentProvider.solfegeShift,
+      solfegeTonicAlter: instrumentProvider.solfegeTonicAlter,
     );
   }
 }
